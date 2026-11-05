@@ -32,7 +32,7 @@
 - [x] **Phase 2: Database & Backend Foundation** (SQLAlchemy models, Async DB sessions, CRUD repositories, REST API v1)
 - [x] **Phase 3: Listener Agent** (Datadog Status & HN Live Adapters, Reddit OAuth Graceful Fallback, Synthetic Generator, Normalization, Classification, Deduplication)
 - [x] **Phase 4: Profiler Agent** (Entity resolution, DNS verification, GitHub/Job technology profiling, explainable 5-dimension ICP scoring, strict anti-hallucination evidence validation)
-- [ ] **Phase 5: FinOps & Architect Agent** (Datadog vs. SigNoz/Grafana Delta Matrix, OTel migration blueprints, dual-shipping YAMLs)
+- [x] **Phase 5: FinOps & Architect Agent** (Datadog vs. SigNoz/Grafana Delta Matrix, 5 platforms, Low/Base/High scenarios, sensitivity ranking, OpenTelemetry dual-shipping YAML generator, 7-phase migration plan, rollback strategy, DepositionDossier persistence)
 - [ ] **Phase 6: Copywriter Agent** (Context-aware outreach drafts, value propositions, human-in-the-loop review)
 - [ ] **Phase 7: Central Orchestration** (Agent state machine, retry policies, deduplication, JSON schema validation)
 - [ ] **Phase 8: Frontend Dashboard** (Next.js, Tailwind CSS, Recharts, Dossier viewer, real-time monitors)
@@ -41,82 +41,70 @@
 
 ---
 
-## Phase 4: Profiler Agent Architecture
+## Phase 5: FinOps & Architect Agent
 
-```
-[ Listener Signal (status='NEW') ]
-               │
-               ▼
-   [ Entity Resolver ] ──────────────▶ Anonymous / Unverified? ──▶ [ Signal.status = 'UNRESOLVED' ]
-   (Explicit Company / Domain)                                      (No Fabrication, Preserved)
-               │ (Candidate Identified)
-               ▼
-   [ Domain Verifier ] ──────────────▶ Public DNS Checks (A, CNAME, MX)
-               │
-               ▼
- [ Technology Profiler ] ────────────▶ Public GitHub Repos + Job Postings Telemetry
-               │
-               ▼
-   [ Evidence Validator ] ───────────▶ Strict Classification: VERIFIED vs INFERRED vs UNKNOWN
-               │
-               ▼
-     [ Explainable ICP Scorer ] ─────▶ 5 Dimensions (Size: 20%, Infra: 20%, Tech: 25%, DD: 20%, Distress: 15%)
-                                       Separate Scores: ICP Fit, Identity Conf, Technology Conf
-               │
-               ▼
-    [ Qualification State ] ─────────▶ ACCEPTED / REVIEW_REQUIRED / REJECTED
-                                       (High ICP Fit NEVER overrides weak identity evidence!)
-```
+### 1. Part A: FinOps Intelligence Engine
+- **Supported Platforms**:
+  1. Datadog (Enterprise Hosts, APM, Custom Metrics, Log Ingestion & Retention)
+  2. SigNoz Cloud (Zero per-node tax, pure usage-based ingestion)
+  3. SigNoz Self-Hosted (Free OSS Community Edition + AWS compute/storage)
+  4. Grafana Cloud (Active series metrics, logs, traces)
+  5. Grafana OSS (Mimir, Loki, Tempo self-hosted stack)
+- **Granular Scenarios**:
+  - `LOW`: Conservative telemetry scale (-35%)
+  - `BASE`: Standard derived baseline based on company size and infrastructure footprint
+  - `HIGH`: Heavy custom metrics expansion (+50%)
+- **Calculations**:
+  - Itemized monthly & annual platform expenditures
+  - Annual savings and savings percentage
+  - Estimated migration cost & payback period in months
+  - 3-Year Total Cost of Ownership (TCO) across all target platforms
+  - Sensitivity analysis identifying highest-variance telemetry levers
 
-### 1. Explainable ICP Scoring Model
-
-The Profiler Agent evaluates 5 distinct weighted dimensions (0.0 to 1.0):
-
-1. **Company Size Suitability (20%)**: Optimal sweet spot is 50–1000 employees with high telemetry spend and agility to migrate.
-2. **Infrastructure Maturity (20%)**: Cloud-native footprint (Kubernetes, AWS/GCP, multi-node clusters).
-3. **Technology Footprint (25%)**: OpenTelemetry, APM, microservices, distributed tracing readiness.
-4. **Datadog Usage Evidence (20%)**: Concrete verified or inferred evidence of active Datadog production telemetry.
-5. **Migration Intent or Pain Urgency (15%)**: Signal distress rating and urgency level from price shocks or outages.
-
-### 2. Separate Confidence Dimensions
-- **ICP Fit Score**: Attractiveness as a potential takeout customer.
-- **Identity Confidence**: Confidence that the author/signal belongs to the identified corporate entity.
-- **Technology Confidence**: Confidence that the company runs Datadog in production.
-
-### 3. Qualification Gates
-- **`ACCEPTED`**: `identity_confidence >= 0.70` AND `icp_fit_score >= 0.65` AND `technology_confidence >= 0.60`.
-- **`REVIEW_REQUIRED`**: Promising infrastructure or pain, but requires human identity verification before outreach.
-- **`REJECTED`**: Micro-hobbyists, students, or non-commercial projects.
+### 2. Part B: Architecture Migration Engine
+- **Current Architecture Assessment**: Audits application services, Kubernetes environments, and ingestion methods, labeling components as `VERIFIED`, `INFERRED`, or `UNKNOWN`.
+- **OpenTelemetry Dual-Shipping Configuration**: Produces validated, production-grade `otel-collector-config.yaml` with native Datadog trace receiver (`:8126`) and dual-shipping pipeline multiplexing.
+- **7-Phase Takeout Roadmap**:
+  - Phase 1: Telemetry Discovery & Footprint Audit (Days 1–3)
+  - Phase 2: Parallel OpenTelemetry Collector Deployment (Days 4–7)
+  - Phase 3: Dual-Shipping & Data Parity Validation (Days 8–14)
+  - Phase 4: Performance & Dashboard Cost Verification (Days 15–21)
+  - Phase 5: Gradual Traffic Cutover / Canary Waves (Days 22–30)
+  - Phase 6: Datadog Dependency Reduction (Days 31–45)
+  - Phase 7: Final Decommissioning & Contract Termination (Days 46–60)
+- **Rollback Playbook**: Zero-loss rollback strategy with parallel pipeline isolation.
 
 ---
 
-## REST API Profiler Endpoints
+## REST API FinOps & Architecture Endpoints
 
 ```bash
-# Trigger batch profiling over new listener signals
-curl -X POST "http://localhost:8000/api/v1/profiler/run" \
-     -H "Content-Type: application/json" \
-     -d '{"max_signals": 10}'
+# Generate financial analysis for an identified company
+curl -X POST "http://localhost:8000/api/v1/finops/run/{company_id}"
 
-# Check profiler operational status and queue counts
-curl "http://localhost:8000/api/v1/profiler/status"
+# Generate OpenTelemetry migration blueprint and collector YAML
+curl -X POST "http://localhost:8000/api/v1/architecture/run/{company_id}?target_backend=SigNoz Cloud"
 
-# List enriched companies (filter by qualification status or minimum ICP score)
-curl "http://localhost:8000/api/v1/profiler/companies?status=ACCEPTED&min_icp_score=0.70"
+# Generate and persist complete Deposition Dossier in SQLite
+curl -X POST "http://localhost:8000/api/v1/finops/dossier/{company_id}"
 
-# Fetch complete company intelligence dossier by ID
-curl "http://localhost:8000/api/v1/profiler/companies/{company_id}"
+# Retrieve stored financial report or migration blueprint
+curl "http://localhost:8000/api/v1/finops/{company_id}"
+curl "http://localhost:8000/api/v1/architecture/{company_id}"
 
-# Retrieve aggregated qualification metrics
-curl "http://localhost:8000/api/v1/profiler/metrics"
+# Inspect published pricing catalog with verification dates & source URLs
+curl "http://localhost:8000/api/v1/finops/pricing"
+
+# Retrieve aggregate financial metrics across all dossiers
+curl "http://localhost:8000/api/v1/finops/metrics"
 ```
 
 ---
 
-## Local Test Execution
+## Automated Test Execution
 
 ```powershell
 cd backend
 .\.venv\Scripts\pytest.exe -v
 ```
-All **38 automated tests** passing across unit, source, listener, and profiler test suites.
+All **51 automated tests** passing 100% green across all components.
