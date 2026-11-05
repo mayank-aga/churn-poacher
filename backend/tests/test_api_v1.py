@@ -2,6 +2,7 @@
 Integration Tests for Database & API v1 Endpoints (Phase 2).
 """
 
+import uuid
 import pytest
 from httpx import AsyncClient, ASGITransport
 from app.main import app
@@ -17,10 +18,11 @@ async def setup_test_db():
 @pytest.mark.asyncio
 async def test_signal_lifecycle():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        unique_sig_id = f"test-signal-{uuid.uuid4().hex[:8]}"
         signal_payload = {
-            "signal_id": "test-signal-001",
+            "signal_id": unique_sig_id,
             "source": "REDDIT",
-            "original_url": "https://reddit.com/r/devops/comments/example1",
+            "original_url": f"https://reddit.com/r/devops/comments/{unique_sig_id}",
             "author_handle": "cloud_eng_lead",
             "vendor": "Datadog",
             "complaint_category": "PRICING_SHOCK",
@@ -39,7 +41,7 @@ async def test_signal_lifecycle():
         create_res = await client.post("/api/v1/signals", json=signal_payload)
         assert create_res.status_code == 201
         created = create_res.json()
-        assert created["signal_id"] == "test-signal-001"
+        assert created["signal_id"] == unique_sig_id
         assert created["urgency_score"] == 0.92
 
         # 2. Prevent duplicate signals
@@ -60,11 +62,12 @@ async def test_signal_lifecycle():
 @pytest.mark.asyncio
 async def test_company_and_dossier_lifecycle():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        unique_sig_id = f"test-signal-{uuid.uuid4().hex[:8]}"
         # Create a parent signal first
         signal_payload = {
-            "signal_id": "test-signal-002",
+            "signal_id": unique_sig_id,
             "source": "HACKER_NEWS",
-            "original_url": "https://news.ycombinator.com/item?id=999999",
+            "original_url": f"https://news.ycombinator.com/item?id={unique_sig_id}",
             "vendor": "Datadog",
             "complaint_category": "OUTAGE",
             "raw_content": "Datadog US1 outage took down our alert pipeline during deployment.",
@@ -72,12 +75,13 @@ async def test_company_and_dossier_lifecycle():
             "is_synthetic": True,
         }
         sig_res = await client.post("/api/v1/signals", json=signal_payload)
+        assert sig_res.status_code == 201
         signal_id = sig_res.json()["id"]
 
         # Create Company Profile
         company_payload = {
             "signal_id": signal_id,
-            "name": "Acme Cloud Infrastructure",
+            "name": f"Acme Cloud Infrastructure {unique_sig_id}",
             "domain": "acmecloud.io",
             "estimated_size": "100-250 employees",
             "industry": "Fintech / Payments",
@@ -154,10 +158,45 @@ async def test_company_and_dossier_lifecycle():
 @pytest.mark.asyncio
 async def test_stats_and_logs():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        # Create a test signal
+        sig_id = f"test-signal-{uuid.uuid4().hex[:6]}"
+        sig_res = await client.post("/api/v1/signals", json={
+            "signal_id": sig_id,
+            "source": "REDDIT",
+            "original_url": f"https://reddit.com/{sig_id}",
+            "vendor": "Datadog",
+            "complaint_category": "PRICING_SHOCK",
+            "raw_content": "Bill increase test",
+            "is_synthetic": True,
+        })
+        assert sig_res.status_code == 201
+        signal_db_id = sig_res.json()["id"]
+
+        # Create a company with high ICP score (qualified prospect)
+        comp_res = await client.post("/api/v1/companies", json={
+            "signal_id": signal_db_id,
+            "name": "Stats Test Corp",
+            "icp_score": 0.85,
+            "is_synthetic": True,
+        })
+        assert comp_res.status_code == 201
+        company_db_id = comp_res.json()["id"]
+
+        # Create a dossier with estimated savings
+        dos_res = await client.post("/api/v1/dossiers", json={
+            "signal_id": signal_db_id,
+            "company_id": company_db_id,
+            "financial_delta": {
+                "estimated_annual_savings": 120000.0,
+            },
+            "is_synthetic": True,
+        })
+        assert dos_res.status_code == 201
+
         # Create execution log
         log_payload = {
             "agent_name": "LISTENER",
-            "signal_id": "test-signal-001",
+            "signal_id": sig_id,
             "status": "SUCCESS",
             "execution_time_ms": 320,
             "input_payload": {"query": "Datadog pricing"},
@@ -173,4 +212,4 @@ async def test_stats_and_logs():
         assert stats["signals_detected"] >= 1
         assert stats["companies_identified"] >= 1
         assert stats["qualified_prospects"] >= 1
-        assert stats["total_potential_annual_savings"] > 0
+        assert stats["total_potential_annual_savings"] >= 120000.0
