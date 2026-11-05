@@ -16,10 +16,11 @@ async def clean_database():
         if "sqlite" in str(async_engine.url):
             await conn.execute(text("PRAGMA foreign_keys = OFF;"))
             await conn.execute(text("DELETE FROM deposition_dossiers;"))
+            await conn.execute(text("DELETE FROM workflow_executions;"))
             await conn.execute(text("DELETE FROM companies;"))
             await conn.execute(text("DELETE FROM signals;"))
             await conn.execute(text("DELETE FROM agent_execution_logs;"))
             await conn.execute(text("PRAGMA foreign_keys = ON;"))
         else:
-            await conn.execute(text("TRUNCATE TABLE deposition_dossiers, companies, signals, agent_execution_logs CASCADE;"))
+            await conn.execute(text("TRUNCATE TABLE workflow_executions, deposition_dossiers, companies, signals, agent_execution_logs CASCADE;"))
     yield

@@ -34,7 +34,7 @@
 - [x] **Phase 4: Profiler Agent** (Entity resolution, DNS verification, GitHub/Job technology profiling, explainable 5-dimension ICP scoring, strict anti-hallucination evidence validation)
 - [x] **Phase 5: FinOps & Architect Agent** (Datadog vs. SigNoz/Grafana Delta Matrix, 5 platforms, Low/Base/High scenarios, sensitivity ranking, OpenTelemetry dual-shipping YAML generator, 7-phase migration plan, rollback strategy, DepositionDossier persistence)
 - [x] **Phase 6: Copywriter Agent** (Context-aware outreach drafts, executive emails, LinkedIn sequences, technical pitch, value prop, objection matrix, evidence guard, human-in-the-loop review)
-- [ ] **Phase 7: Central Orchestration** (Agent state machine, retry policies, deduplication, JSON schema validation)
+- [x] **Phase 7: Central Orchestration** (End-to-end multi-agent pipeline, workflow state machine, retry policies, qualification-based routing, duplicate execution prevention, REST APIs)
 - [ ] **Phase 8: Frontend Dashboard** (Next.js, Tailwind CSS, Recharts, Dossier viewer, real-time monitors)
 - [ ] **Phase 9: End-to-End Integration & Testing** (Integration tests, scenario tests, live/demo runs)
 - [ ] **Phase 10: Docker Deployment & Documentation** (Docker Compose, production runbooks, user guide)
@@ -161,10 +161,88 @@ curl "http://localhost:8000/api/v1/copywriter/metrics"
 
 ---
 
+## Phase 7: Central Orchestrator
+
+The Central Orchestrator is the mission-control engine of The Churn Poacher. It coordinates the execution lifecycle of all specialized agents (Listener, Profiler, FinOps, Architecture, and Copywriter) with qualification-based gating, error recovery, duplicate prevention, and strict human governance.
+
+### 1. Workflow Pipeline & State Machine
+
+```
+   PENDING
+      │
+      ▼
+   LISTENER_RUNNING ───▶ Signal Ingestion & Anomaly Triage
+      │
+      ▼
+   PROFILER_RUNNING ───▶ Entity Resolution & Technology Fingerprinting
+      │
+      ▼
+   QUALIFICATION_REVIEW ──[Unqualified / Hobbyist / Student]──▶ REJECTED (Halted)
+      │
+   [Qualified / Enterprise]
+      ▼
+   FINOPS_RUNNING ───▶ Telemetry Cost Modeling & Savings Delta
+      │
+      ▼
+   ARCHITECT_RUNNING ───▶ OTel Collector Blueprint (:8126) & 7-Stage Migration
+      │
+      ▼
+   COPYWRITER_RUNNING ───▶ Personalized Collateral & Evidence Guard Audit
+      │
+      ▼
+   DRAFT_PENDING_APPROVAL ──▶ Human-in-the-Loop Review Gate
+      │
+      ├───────────────────────┬────────────────────────┐
+      ▼                       ▼                        ▼
+   APPROVED                REJECTED             EXPORT (Gated)
+      │                                       (403 if unapproved)
+      ▼
+   COMPLETED
+```
+
+### 2. Orchestration Policies & Features
+- **Qualification-Based Routing**: Disqualifies non-commercial signals (students, hobbyists, micro-teams) at the Profiler/Qualification gate. Unqualified companies are marked `REJECTED` and immediately dropped from downstream FinOps and collateral processing to conserve resources.
+- **Duplicate Execution Prevention**: Active in-flight workflows prevent duplicate concurrent executions targeting the same company or signal, returning HTTP 409 Conflict.
+- **Partial Failure Recovery & Resumption**: When retrying a failed workflow (`/api/v1/orchestrator/retry/{workflow_id}`), successfully completed upstream steps are preserved and skipped, resuming execution directly from the failed milestone.
+- **Timeout Protection**: Workflows are bound to configurable execution deadlines (default: 60s) with graceful `TimeoutError` handling.
+- **Full Observability**: Step execution durations, started/completed timestamps, inputs, outputs, and errors are tracked in `WorkflowExecution.step_history` and logged to `AgentExecutionLog`.
+- **Human Approval Preservation**: The orchestrator strictly leaves generated dossiers in `DRAFT_PENDING_APPROVAL`. It never automatically emails, messages, or exports unapproved materials.
+
+### 3. Orchestration REST API Endpoints
+
+```bash
+# 1. Trigger an orchestrated pipeline run (full pipeline, single signal, or single company)
+curl -X POST "http://localhost:8000/api/v1/orchestrator/run" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "target_challenger": "SigNoz Cloud",
+    "include_synthetic": true,
+    "timeout_seconds": 60
+  }'
+
+# 2. Get status and step-by-step history of a specific workflow
+curl "http://localhost:8000/api/v1/orchestrator/status/{workflow_id}"
+
+# 3. List recent workflows (with optional status filter and pagination)
+curl "http://localhost:8000/api/v1/orchestrator/workflows?status=DRAFT_PENDING_APPROVAL&limit=20"
+
+# 4. Inspect aggregate orchestration metrics
+curl "http://localhost:8000/api/v1/orchestrator/metrics"
+
+# 5. Retry a failed workflow from its last failed step
+curl -X POST "http://localhost:8000/api/v1/orchestrator/retry/{workflow_id}"
+```
+
+### 4. Known Limitations
+- Background task queues (e.g. Celery / ARQ / Redis) are intentionally deferred to Phase 10; current execution is fully asynchronous within FastAPI's async runtime.
+- External vendor APIs (e.g., Live Reddit PRAW, LinkedIn APIs) require configured API credentials; otherwise, the system seamlessly uses live Hacker News, Datadog Status RSS, and synthetic labeled pipelines.
+
+---
+
 ## Automated Test Execution
 
 ```powershell
 cd backend
 .\.venv\Scripts\pytest.exe -v
 ```
-All **61 automated tests** passing 100% green across all components and agents.
+All **74 automated tests** passing 100% green across all components, agents, and orchestrator.

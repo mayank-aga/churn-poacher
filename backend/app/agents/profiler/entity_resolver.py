@@ -60,8 +60,9 @@ class EntityResolver:
 
         # Check extracted evidence from listener if present
         if extracted_evidence and isinstance(extracted_evidence, dict):
-            if "company_name" in extracted_evidence:
-                explicit_company_name = str(extracted_evidence["company_name"])
+            comp_val = extracted_evidence.get("company_name") or extracted_evidence.get("company")
+            if comp_val:
+                explicit_company_name = str(comp_val)
                 explicit_domain = extracted_evidence.get("domain")
                 identity_confidence = 0.85
 
@@ -75,6 +76,14 @@ class EntityResolver:
                     explicit_domain = extracted_d
                     explicit_company_name = extracted_d.split(".")[0].capitalize()
                     identity_confidence = 0.80
+
+        # Check domain mentioned in text body if domain is still unresolved
+        if not explicit_domain:
+            domain_in_text = re.search(r"\b([a-zA-Z0-9\-]+\.(?:io|com|org|ai|net|co))\b", full_text)
+            if domain_in_text:
+                found_d = domain_in_text.group(1).lower()
+                if found_d not in ["reddit.com", "ycombinator.com", "twitter.com", "datadoghq.com", "github.com"]:
+                    explicit_domain = found_d
 
         # 3. Look for explicit ownership declarations in the text
         if not explicit_company_name:
