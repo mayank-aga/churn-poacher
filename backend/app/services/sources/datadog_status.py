@@ -13,7 +13,7 @@ import httpx
 from app.core.config import settings
 from app.core.logging import logger
 from app.agents.listener.schemas import NormalizedSignal
-from app.agents.listener.normalizer import SignalNormalizer
+from app.agents.listener.normalizer import SignalNormalizer, strip_html
 from app.agents.listener.classifier import SignalClassifier
 
 
@@ -79,10 +79,10 @@ class DatadogStatusAdapter:
                     desc_elem = item.find("description")
                     guid_elem = item.find("guid")
 
-                    title = title_elem.text.strip() if title_elem is not None and title_elem.text else "Datadog Incident"
+                    title = strip_html(title_elem.text) if title_elem is not None and title_elem.text else "Datadog Incident"
                     link = link_elem.text.strip() if link_elem is not None and link_elem.text else "https://status.datadoghq.com"
                     guid = guid_elem.text.strip() if guid_elem is not None and guid_elem.text else link.split("/")[-1]
-                    description = desc_elem.text.strip() if desc_elem is not None and desc_elem.text else title
+                    description = strip_html(desc_elem.text) if desc_elem is not None and desc_elem.text else title
 
                     published_at = datetime.now(timezone.utc)
                     if pub_elem is not None and pub_elem.text:

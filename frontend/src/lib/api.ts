@@ -39,11 +39,27 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   return response.json();
 }
 
+function buildQueryString(params: Record<string, any> = {}): string {
+  const searchParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (
+      value !== undefined &&
+      value !== null &&
+      value !== "" &&
+      value !== "undefined" &&
+      value !== "null"
+    ) {
+      searchParams.append(key, String(value));
+    }
+  }
+  const str = searchParams.toString();
+  return str ? `?${str}` : "";
+}
+
 export const api = {
   // Signals
   async getSignals(params: Record<string, any> = {}): Promise<Signal[]> {
-    const query = new URLSearchParams(params).toString();
-    return request<Signal[]>(`/signals${query ? `?${query}` : ""}`);
+    return request<Signal[]>(`/signals${buildQueryString(params)}`);
   },
 
   async getSignal(id: string): Promise<Signal> {
@@ -52,8 +68,7 @@ export const api = {
 
   // Companies
   async getCompanies(params: Record<string, any> = {}): Promise<Company[]> {
-    const query = new URLSearchParams(params).toString();
-    return request<Company[]>(`/companies${query ? `?${query}` : ""}`);
+    return request<Company[]>(`/companies${buildQueryString(params)}`);
   },
 
   async getCompany(id: string): Promise<Company> {
@@ -62,8 +77,7 @@ export const api = {
 
   // Dossiers
   async getDossiers(params: Record<string, any> = {}): Promise<DepositionDossier[]> {
-    const query = new URLSearchParams(params).toString();
-    return request<DepositionDossier[]>(`/dossiers${query ? `?${query}` : ""}`);
+    return request<DepositionDossier[]>(`/dossiers${buildQueryString(params)}`);
   },
 
   async getDossier(id: string): Promise<DepositionDossier> {
@@ -159,8 +173,7 @@ export const api = {
   },
 
   async listWorkflows(params: Record<string, any> = {}): Promise<{ total: number; workflows: WorkflowResponse[] }> {
-    const query = new URLSearchParams(params).toString();
-    return request<{ total: number; workflows: WorkflowResponse[] }>(`/orchestrator/workflows${query ? `?${query}` : ""}`);
+    return request<{ total: number; workflows: WorkflowResponse[] }>(`/orchestrator/workflows${buildQueryString(params)}`);
   },
 
   async getOrchestratorMetrics(): Promise<WorkflowMetricsResponse> {

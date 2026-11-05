@@ -17,7 +17,7 @@ import { api } from "@/lib/api";
 import { Header } from "@/components/layout/Header";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { Badge, StatusBadge } from "@/components/ui/Badge";
-import { formatDate } from "@/lib/utils";
+import { formatDate, cleanSignalText } from "@/lib/utils";
 
 export default function SignalMonitorPage() {
   const queryClient = useQueryClient();
@@ -53,11 +53,13 @@ export default function SignalMonitorPage() {
 
   const filteredSignals = (signals || []).filter((s) => {
     if (!searchQuery) return true;
+    const cleanContent = cleanSignalText(s.raw_content).toLowerCase();
+    const query = searchQuery.toLowerCase();
     return (
-      s.raw_content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.source.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.complaint_category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (s.author_handle && s.author_handle.toLowerCase().includes(searchQuery.toLowerCase()))
+      cleanContent.includes(query) ||
+      s.source.toLowerCase().includes(query) ||
+      s.complaint_category.toLowerCase().includes(query) ||
+      (s.author_handle && s.author_handle.toLowerCase().includes(query))
     );
   });
 
@@ -174,7 +176,7 @@ export default function SignalMonitorPage() {
 
                     <div className="py-3">
                       <p className="text-xs text-gray-200 leading-relaxed font-sans select-text">
-                        &ldquo;{signal.raw_content}&rdquo;
+                        &ldquo;{cleanSignalText(signal.raw_content)}&rdquo;
                       </p>
                     </div>
 

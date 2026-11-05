@@ -4,9 +4,21 @@ Standardizes raw signals from Datadog Status, Hacker News, Reddit, and Synthetic
 into a uniform NormalizedSignal schema.
 """
 
+import html
+import re
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 from app.agents.listener.schemas import NormalizedSignal
+
+
+def strip_html(text: Optional[str]) -> str:
+    """Safely strips HTML tags and unescapes HTML entities into clean readable text."""
+    if not text:
+        return ""
+    clean = re.sub(r"</?(p|div|li|br|hr)\s*/?>", " ", text, flags=re.IGNORECASE)
+    clean = re.sub(r"<[^>]+>", "", clean)
+    clean = html.unescape(clean)
+    return re.sub(r"\s+", " ", clean).strip()
 
 
 def _parse_iso_datetime(dt_str: Optional[str]) -> datetime:
@@ -38,7 +50,7 @@ class SignalNormalizer:
     def normalize_datadog_incident(raw: Dict[str, Any]) -> NormalizedSignal:
         """Normalizes an incident from Datadog Statuspage API."""
         incident_id = raw.get("id", "unknown-incident")
-        name = raw.get("name", "Datadog Service Incident")
+        name = strip_html(raw.get("name", "Datadog Service Incident"))
         status = raw.get("status", "investigating")
         impact = raw.get("impact", "minor")
         created_at = _parse_iso_datetime(raw.get("created_at"))
@@ -46,7 +58,7 @@ class SignalNormalizer:
         
         # Incident updates
         updates = raw.get("incident_updates", [])
-        latest_body = updates[0].get("body", "") if updates else ""
+        latest_body = strip_html(updates[0].get("body", "")) if updates else ""
         content = f"Incident: {name}\nStatus: {status}\nImpact: {impact}\nLatest Update: {latest_body}"
         
         return NormalizedSignal(
@@ -78,8 +90,8 @@ class SignalNormalizer:
     def normalize_hackernews_item(raw: Dict[str, Any]) -> NormalizedSignal:
         """Normalizes a story or comment from Hacker News Algolia Search API."""
         object_id = str(raw.get("objectID", ""))
-        title = raw.get("title") or raw.get("story_title") or "Hacker News Discussion"
-        story_text = raw.get("story_text") or raw.get("comment_text") or ""
+        title = strip_html(raw.get("title") or raw.get("story_title") or "Hacker News Discussion")
+        story_text = strip_html(raw.get("story_text") or raw.get("comment_text") or "")
         url = raw.get("url") or f"https://news.ycombinator.com/item?id={object_id}"
         author = raw.get("author", "unknown_user")
         created_at_str = raw.get("created_at")

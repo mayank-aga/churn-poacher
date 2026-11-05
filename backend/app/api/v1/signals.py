@@ -24,11 +24,11 @@ async def list_signals(
     db: AsyncSession = Depends(get_db),
 ):
     query = select(Signal).order_by(desc(Signal.created_at)).limit(limit)
-    if source:
+    if source and source not in ("undefined", "null", ""):
         query = query.where(Signal.source == source)
-    if vendor:
+    if vendor and vendor not in ("undefined", "null", ""):
         query = query.where(Signal.vendor == vendor)
-    if complaint_category:
+    if complaint_category and complaint_category not in ("undefined", "null", ""):
         query = query.where(Signal.complaint_category == complaint_category)
     if min_urgency is not None:
         query = query.where(Signal.urgency_score >= min_urgency)

@@ -20,7 +20,7 @@ import { Header } from "@/components/layout/Header";
 import { MetricCard } from "@/components/ui/MetricCard";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import { StatusBadge, Badge } from "@/components/ui/Badge";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, cleanSignalText } from "@/lib/utils";
 
 export default function OverviewPage() {
   const { data: stats, isLoading: loadingStats } = useQuery({
@@ -182,7 +182,7 @@ export default function OverviewPage() {
                         <span className="text-[11px] font-mono text-gray-500">{formatDate(s.created_at)}</span>
                       </div>
                       <p className="text-xs text-gray-300 line-clamp-2 leading-relaxed">
-                        &ldquo;{s.raw_content}&rdquo;
+                        &ldquo;{cleanSignalText(s.raw_content)}&rdquo;
                       </p>
                       <div className="flex items-center justify-between text-[11px] text-gray-500">
                         <span>Urgency: {(s.urgency_score * 10).toFixed(1)}/10</span>

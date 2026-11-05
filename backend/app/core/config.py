@@ -3,6 +3,7 @@ Application Configuration Module using Pydantic Settings.
 Loads environment variables from .env with fallback defaults.
 """
 
+from pathlib import Path
 from typing import Optional, List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -80,7 +81,7 @@ class Settings(BaseSettings):
     CRUSTDATA_ENABLE_MOCK: bool = True  # Fallback when key is missing or for synthetic testing
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(str(Path(__file__).resolve().parent.parent.parent / ".env"), ".env"),
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore",

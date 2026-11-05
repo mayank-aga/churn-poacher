@@ -29,3 +29,23 @@ export function formatDate(dateStr: string | undefined | null): string {
     return dateStr;
   }
 }
+
+export function cleanSignalText(content: string | undefined | null): string {
+  if (!content) return "";
+  let text = content;
+  // Replace block endings and break tags with spaces
+  text = text.replace(/<\/(p|div|li)>/gi, " ");
+  text = text.replace(/<(br|hr)\s*\/?>/gi, " ");
+  // Strip all HTML tags
+  text = text.replace(/<[^>]+>/g, "");
+  // Decode common HTML entities
+  text = text
+    .replace(/&quot;/gi, '"')
+    .replace(/&#x27;|&#39;|&apos;/gi, "'")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&nbsp;/gi, " ");
+  // Normalize extra whitespace
+  return text.replace(/\s+/g, " ").trim();
+}

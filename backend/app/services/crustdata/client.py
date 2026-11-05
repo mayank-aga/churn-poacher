@@ -30,14 +30,19 @@ class CrustdataClient:
     """Official Crustdata API client."""
 
     def __init__(self, api_key: Optional[str] = None):
-        self.api_key = api_key or settings.CRUSTDATA_API_KEY
+        self._api_key = api_key
         self.base_url = settings.CRUSTDATA_API_BASE.rstrip("/")
         self.api_version = settings.CRUSTDATA_API_VERSION
         self.timeout = 15.0
 
     @property
+    def api_key(self) -> Optional[str]:
+        return self._api_key if self._api_key is not None else settings.CRUSTDATA_API_KEY
+
+    @property
     def is_configured(self) -> bool:
-        return bool(self.api_key and self.api_key.strip())
+        key = self.api_key
+        return bool(key and key.strip())
 
     def _get_headers(self) -> Dict[str, str]:
         if not self.is_configured:
@@ -86,6 +91,31 @@ class CrustdataClient:
                 credits = CrustdataMockProvider.get_credits()
                 CreditGuard.update_cached_credits(credits)
                 return credits
+            raise
+
+    async def get_account_endpoints(self) -> Dict[str, Any]:
+        """
+        Retrieves account endpoints and rate limits via GET /account/endpoints (Zero credits).
+        """
+        if not self.is_configured:
+            return {"api_version": self.api_version, "endpoints": [], "is_mock": True}
+
+        url = f"{self.base_url}/account/endpoints"
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                res = await client.get(url, headers=self._get_headers())
+                if res.status_code == 200:
+                    return res.json()
+                elif res.status_code in (401, 403):
+                    raise CrustdataAuthError(f"Crustdata authentication failed: {res.text}")
+                elif res.status_code == 429:
+                    raise CrustdataRateLimitError(retry_after=60)
+                else:
+                    raise CrustdataAPIError(res.status_code, res.text)
+        except Exception as e:
+            if settings.CRUSTDATA_ENABLE_MOCK:
+                logger.warning(f"Crustdata live endpoints lookup failed ({e}); falling back to default.")
+                return {"api_version": self.api_version, "endpoints": [], "is_mock": True}
             raise
 
     async def search_company_candidates(self, query: str, limit: int = 5) -> List[EntityCandidate]:

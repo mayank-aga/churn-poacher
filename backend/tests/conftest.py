@@ -8,6 +8,15 @@ from app.db.session import async_engine, init_db
 
 
 @pytest.fixture(autouse=True)
+def hermetic_crustdata_for_unit_tests(monkeypatch):
+    """Ensures unit test suite is hermetic, offline, and does not depend on live credit balance."""
+    from app.core.config import settings
+    from app.services.crustdata.credit_guard import CreditGuard
+    monkeypatch.setattr(settings, "CRUSTDATA_API_KEY", None)
+    CreditGuard._cached_credits = None
+
+
+@pytest.fixture(autouse=True)
 async def clean_database():
     """Initializes tables and truncates/cleans all records before each test runs."""
     await init_db()

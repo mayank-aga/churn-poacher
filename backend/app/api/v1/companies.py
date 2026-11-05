@@ -22,7 +22,7 @@ async def list_companies(
     db: AsyncSession = Depends(get_db),
 ):
     query = select(Company).order_by(desc(Company.created_at)).limit(limit)
-    if qualification_status:
+    if qualification_status and qualification_status not in ("undefined", "null", ""):
         query = query.where(Company.qualification_status == qualification_status)
     if min_icp_score is not None:
         query = query.where(Company.icp_score >= min_icp_score)
