@@ -16,6 +16,7 @@ import {
   ShieldAlert,
   ChevronRight,
   Terminal,
+  Compass,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,7 @@ const navSections: Array<{ title: string; items: NavItem[] }> = [
   {
     title: "INTELLIGENCE",
     items: [
+      { name: "Crustdata Explorer", href: "/explorer", icon: Compass, badge: "AI" },
       { name: "Financial Analysis", href: "/financials", icon: DollarSign },
       { name: "Migration Architect", href: "/architect", icon: Cpu },
       { name: "Outreach Studio", href: "/outreach", icon: Mail },

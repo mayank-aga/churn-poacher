@@ -112,12 +112,14 @@ class EntityResolver:
             search_query = explicit_domain or explicit_company_name or ""
             firmo = CompanySearchService.lookup_firmographics(search_query)
             if firmo:
-                explicit_company_name = firmo["name"]
-                explicit_domain = firmo["domain"]
+                if not explicit_company_name:
+                    explicit_company_name = firmo["name"]
+                if not explicit_domain:
+                    explicit_domain = firmo["domain"]
                 identity_confidence = max(identity_confidence, 0.85)
                 evidence_list.append(
                     EvidenceValidator.create_record(
-                        claim=f"Verified public corporate entity: {firmo['name']}",
+                        claim=f"Verified public corporate entity: {explicit_company_name}",
                         classification="VERIFIED",
                         source="CompanySearch",
                         description=f"Industry: {firmo.get('industry')}, Size: {firmo.get('estimated_size')}",

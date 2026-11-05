@@ -63,7 +63,37 @@ class TechnologyProfiler:
             if "Datadog" not in detected["observability"]:
                 detected["observability"].append("Datadog")
 
-        # 3. Calculate Overall Technology Confidence
+        # 3. Ingest Crustdata Verified Technographics
+        try:
+            from app.services.crustdata.mock_provider import CrustdataMockProvider
+            target_id = domain or company_name
+            crust_profile = CrustdataMockProvider.enrich_company(target_id)
+            for t in crust_profile.technographics:
+                t_cat = t.category.lower()
+                if t_cat in detected:
+                    if t.name not in detected[t_cat]:
+                        detected[t_cat].append(t.name)
+                evidence_list.append(
+                    TechEvidence(
+                        technology=t.name,
+                        category=t.category,
+                        classification=t.classification.value if hasattr(t.classification, 'value') else str(t.classification),
+                        source="CrustdataTechnographics",
+                        source_url=t.source_url or f"https://api.crustdata.com/company/technographics/{domain or company_name}",
+                        snippet=f"Crustdata verified software detection: {t.name} ({t.category})",
+                        confidence=0.92 if str(t.classification) == "VERIFIED" else 0.75,
+                    )
+                )
+                if t.name == "Datadog":
+                    has_datadog = True
+                elif t.name == "Kubernetes":
+                    has_k8s = True
+                elif t.name == "OpenTelemetry":
+                    has_otel = True
+        except Exception:
+            pass
+
+        # 4. Calculate Overall Technology Confidence
         if has_datadog and has_k8s:
             tech_confidence = 0.85
         elif has_datadog:

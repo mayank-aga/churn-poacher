@@ -8,6 +8,11 @@ from app.models.dossier import DepositionDossier
 from app.models.execution_log import AgentExecutionLog
 from app.models.workflow import WorkflowExecution
 from app.models.user import User
+from app.models.intelligence import (
+    IntelligenceEntity,
+    IntelligenceSearch,
+    IntelligenceEvidence,
+)
 
 __all__ = [
     "Signal",
@@ -16,4 +21,7 @@ __all__ = [
     "AgentExecutionLog",
     "WorkflowExecution",
     "User",
+    "IntelligenceEntity",
+    "IntelligenceSearch",
+    "IntelligenceEvidence",
 ]

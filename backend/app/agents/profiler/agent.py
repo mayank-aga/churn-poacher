@@ -142,7 +142,26 @@ class ProfilerAgent:
                     summary.companies_review_required += 1
                     sig.status = "PROFILED"
 
-                # 6. Persist Company Record into Database
+                # 6. Resolve Decision Makers via Crustdata Intelligence
+                resolved_decision_makers = list(candidate.decision_makers) if candidate.decision_makers else []
+                if candidate.domain:
+                    try:
+                        from app.services.crustdata.mock_provider import CrustdataMockProvider
+                        c_prof = CrustdataMockProvider.enrich_company(candidate.domain)
+                        if c_prof.leadership:
+                            resolved_decision_makers = [
+                                {
+                                    "name": l.get("name"),
+                                    "title": l.get("title"),
+                                    "role": l.get("title"),
+                                    "department": "Engineering",
+                                }
+                                for l in c_prof.leadership
+                            ]
+                    except Exception:
+                        pass
+
+                # 7. Persist Company Record into Database
                 company = Company(
                     signal_id=sig.id,
                     name=candidate.company_name,
@@ -156,7 +175,7 @@ class ProfilerAgent:
                     identity_confidence=score_report.identity_confidence,
                     technology_confidence=score_report.technology_confidence,
                     qualification_status=score_report.qualification_status,
-                    decision_makers=candidate.decision_makers,
+                    decision_makers=resolved_decision_makers,
                     evidence_sources=[sig.original_url] if sig.original_url else [],
                     evidence_records=evidence_records,
                     is_synthetic=sig.is_synthetic,

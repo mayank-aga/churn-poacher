@@ -6,16 +6,19 @@ DNS is used solely as supporting domain verification, never as proof of Datadog 
 
 import socket
 import asyncio
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
 from datetime import datetime, timezone
-from app.agents.profiler.schemas import DnsRecord, DnsVerificationResult
 from app.core.logging import logger
+
+if TYPE_CHECKING:
+    from app.agents.profiler.schemas import DnsRecord, DnsVerificationResult
 
 
 class DnsVerificationService:
     @classmethod
-    async def verify_domain(cls, domain: str) -> DnsVerificationResult:
+    async def verify_domain(cls, domain: str):
         """Asynchronously verifies DNS resolution and corporate MX/TXT records for a domain."""
+        from app.agents.profiler.schemas import DnsRecord, DnsVerificationResult
         clean_domain = domain.strip().lower().replace("http://", "").replace("https://", "").split("/")[0]
         
         loop = asyncio.get_running_loop()

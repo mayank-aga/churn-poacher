@@ -294,3 +294,163 @@ export interface SystemStatsSummary {
   potential_annual_savings_usd: number;
   agent_status?: Record<string, string>;
 }
+
+// ============================================================================
+// CRUSTDATA INTELLIGENCE EXTRACTION TYPES
+// ============================================================================
+
+export type CrustdataEntityType = "COMPANY" | "PERSON" | "UNKNOWN";
+export type CrustdataEnrichmentLevel = "LEVEL_1_SEARCH" | "LEVEL_2_STANDARD" | "LEVEL_3_DEEP";
+export type VerificationClassification = "VERIFIED" | "INFERRED" | "UNKNOWN";
+
+export interface CrustdataCreditsInfo {
+  total_credits: number;
+  remaining_credits: number;
+  used_credits: number;
+  renewal_date?: string | null;
+  enabled_endpoints: string[];
+  is_mock: boolean;
+  checked_at: string;
+}
+
+export interface EntityCandidate {
+  candidate_id: string;
+  entity_type: CrustdataEntityType;
+  name: string;
+  primary_domain?: string | null;
+  profile_url?: string | null;
+  current_title?: string | null;
+  company_name?: string | null;
+  headline?: string | null;
+  location?: string | null;
+  logo_url?: string | null;
+  confidence_score: number;
+  is_ambiguous: boolean;
+  is_mock: boolean;
+}
+
+export interface EntitySearchResponse {
+  query: string;
+  detected_type: CrustdataEntityType;
+  candidates: EntityCandidate[];
+  is_ambiguous: boolean;
+  credits_consumed: number;
+  is_mock: boolean;
+}
+
+export interface TechnographicItem {
+  name: string;
+  category: string;
+  classification: VerificationClassification;
+  source_url?: string | null;
+  first_detected_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface FundingRoundItem {
+  round_name: string;
+  amount_usd?: number | null;
+  round_date?: string | null;
+  investors: string[];
+  lead_investor?: string | null;
+}
+
+export interface JobListingItem {
+  job_id?: string | null;
+  title: string;
+  department?: string | null;
+  location?: string | null;
+  posted_at?: string | null;
+  url?: string | null;
+  required_technologies: string[];
+}
+
+export interface WorkHistoryItem {
+  company_name: string;
+  title: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  is_current: boolean;
+  description?: string | null;
+}
+
+export interface IntelligenceEvidenceItem {
+  data_category: string;
+  claim: string;
+  source_url?: string | null;
+  retrieval_timestamp: string;
+  confidence: number;
+  verification_classification: VerificationClassification;
+  metadata: Record<string, any>;
+}
+
+export interface CompanyIntelligenceProfile {
+  entity_id: string;
+  name: string;
+  primary_domain: string;
+  alternate_domains: string[];
+  website?: string | null;
+  linkedin_url?: string | null;
+  twitter_url?: string | null;
+  github_url?: string | null;
+  description?: string | null;
+  industry?: string | null;
+  headcount?: string | null;
+  headcount_timeseries: Array<Record<string, any>>;
+  headcount_by_department: Record<string, number>;
+  annual_revenue_range?: string | null;
+  headquarters?: string | null;
+  founding_year?: number | null;
+  technographics: TechnographicItem[];
+  funding_rounds: FundingRoundItem[];
+  total_funding_usd?: number | null;
+  leadership: Array<Record<string, any>>;
+  active_jobs: JobListingItem[];
+  competitors: Array<Record<string, any>>;
+  social_posts: Array<Record<string, any>>;
+  news_articles: Array<Record<string, any>>;
+  evidence: IntelligenceEvidenceItem[];
+  enrichment_level: CrustdataEnrichmentLevel;
+  credits_consumed: number;
+  data_freshness: string;
+  retrieved_at: string;
+  is_mock: boolean;
+}
+
+export interface PersonIntelligenceProfile {
+  entity_id: string;
+  full_name: string;
+  current_title?: string | null;
+  current_company?: string | null;
+  headline?: string | null;
+  location?: string | null;
+  linkedin_url?: string | null;
+  twitter_url?: string | null;
+  github_url?: string | null;
+  verified_work_email?: string | null;
+  summary_bio?: string | null;
+  is_decision_maker: boolean;
+  decision_maker_score: number;
+  work_history: WorkHistoryItem[];
+  education: Array<Record<string, any>>;
+  skills: string[];
+  social_activity: Array<Record<string, any>>;
+  evidence: IntelligenceEvidenceItem[];
+  enrichment_level: CrustdataEnrichmentLevel;
+  credits_consumed: number;
+  data_freshness: string;
+  retrieved_at: string;
+  is_mock: boolean;
+}
+
+export interface DeepEnrichmentCostEstimate {
+  entity_name: string;
+  entity_type: CrustdataEntityType;
+  target_identifier: string;
+  estimated_credits: number;
+  account_credits_available: number;
+  safety_threshold: number;
+  can_proceed: boolean;
+  warning_message?: string | null;
+}
+

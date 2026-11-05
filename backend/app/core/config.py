@@ -71,6 +71,14 @@ class Settings(BaseSettings):
     APOLLO_API_KEY: Optional[str] = None
     GITHUB_TOKEN: Optional[str] = None
 
+    # Crustdata Intelligence Integration
+    CRUSTDATA_API_KEY: Optional[str] = None
+    CRUSTDATA_API_BASE: str = "https://api.crustdata.com"
+    CRUSTDATA_API_VERSION: str = "2025-11-01"
+    CRUSTDATA_MIN_CREDIT_THRESHOLD: int = 5
+    CRUSTDATA_CACHE_TTL_DAYS: int = 7
+    CRUSTDATA_ENABLE_MOCK: bool = True  # Fallback when key is missing or for synthetic testing
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

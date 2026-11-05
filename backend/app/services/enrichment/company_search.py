@@ -39,7 +39,27 @@ class CompanySearchService:
         if not query:
             return None
         q = query.lower().strip()
+        # 1. Check known enterprise dictionary
         for key, data in cls.KNOWN_COMPANIES.items():
             if key in q or data["domain"] in q:
                 return data
+
+        # 2. Check Crustdata Intelligence Layer
+        try:
+            from app.services.crustdata.mock_provider import CrustdataMockProvider
+            from app.services.crustdata.schemas import EntityType
+            candidates = CrustdataMockProvider.search_candidates(query, entity_type=EntityType.COMPANY, limit=1)
+            if candidates:
+                cand = candidates[0]
+                enriched = CrustdataMockProvider.enrich_company(cand.primary_domain or cand.name)
+                return {
+                    "name": enriched.name,
+                    "domain": enriched.primary_domain,
+                    "industry": enriched.industry or "Technology",
+                    "estimated_size": enriched.headcount or "100-500 employees",
+                    "description": enriched.description or f"Enterprise operations for {enriched.name}",
+                }
+        except Exception:
+            pass
+
         return None
