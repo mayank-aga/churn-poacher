@@ -16,6 +16,7 @@ from app.models.signal import Signal
 from app.models.dossier import DepositionDossier
 from app.models.execution_log import AgentExecutionLog
 from app.agents.copywriter.agent import CopywriterAgent
+from app.api.deps import require_roles, AuthenticatedUserContext
 from app.agents.copywriter.schemas import OutreachPackage
 
 router = APIRouter(tags=["Copywriter Agent"])
@@ -127,6 +128,7 @@ async def get_copywriter_drafts(
 async def approve_outreach_draft(
     dossier_id: str,
     db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUserContext = Depends(require_roles(["ADMINISTRATOR", "SALES_MANAGER"])),
 ):
     """Human-in-the-loop approval endpoint. Promotes draft from DRAFT_PENDING_APPROVAL to APPROVED."""
     dossier_res = await db.execute(
@@ -207,6 +209,7 @@ async def reject_outreach_draft(
 async def export_outreach_package(
     dossier_id: str,
     db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUserContext = Depends(require_roles(["ADMINISTRATOR", "SALES_MANAGER"])),
 ):
     """
     Exports approved collateral package.

@@ -37,7 +37,7 @@
 - [x] **Phase 7: Central Orchestration** (End-to-end multi-agent pipeline, workflow state machine, retry policies, qualification-based routing, duplicate execution prevention, REST APIs)
 - [x] **Phase 8: Frontend Dashboard** (Next.js 14 App Router, TypeScript, Tailwind CSS, TanStack Query, Recharts, React Flow DAG, 10 Production Views, Human-in-the-Loop review & export gating)
 - [x] **Phase 9: End-to-End Testing & LLM Integration** (Multi-provider LLM abstraction [OpenAI, Gemini, Claude, Fallback], structured Pydantic schemas, full E2E lifecycle tests, export security gating, 89 green backend tests, clean Next.js build)
-- [ ] **Phase 10: Docker Deployment & Documentation** (Docker Compose, production runbooks, user guide)
+- [x] **Phase 10: Production Deployment & Infrastructure** (Docker Compose multi-service stack, PostgreSQL async connection pooling & Alembic migrations, Redis persistent task queue & background worker daemon, Role-Based Access Control [RBAC] & JWT security, deep health check probes, enterprise operational documentation)
 
 ---
 
@@ -310,10 +310,75 @@ Comprehensive integration tests cover the entire system lifecycle:
 
 ---
 
+## Phase 10: Production Deployment & Infrastructure
+
+### 1. Multi-Service Container Topology (`docker-compose.yml`)
+The complete stack is packaged as containerized microservices ready for staging and production:
+- **`postgres`**: PostgreSQL 16 Alpine with persistent volume (`postgres_data`), connection pooling, and health checks.
+- **`redis`**: Redis 7 Alpine with persistent volume (`redis_data`) serving the asynchronous workflow queue and distributed locking.
+- **`backend`**: FastAPI application running on Python 3.11-slim as an unprivileged user (`appuser`), multi-stage build, exposed on `:8000`.
+- **`worker`**: Background worker daemon (`app.worker.main`) executing pipeline runs asynchronously from Redis, with 15s heartbeats.
+- **`frontend`**: Next.js 14 standalone container running on Node 20-alpine as an unprivileged user (`nextjs`), exposed on `:3000`.
+
+### 2. Database Pooling & Alembic Migrations
+- **Async Connection Pooling**: Production PostgreSQL engine configured with `pool_size=10`, `max_overflow=20`, `pool_pre_ping=True`, and `pool_recycle=3600`.
+- **Alembic Engine**: Async migration setup (`alembic/env.py`) with initial revision `f3ca93a9fb86_initial_schema_with_users.py` managing all tables and indexes.
+
+### 3. Redis Queue & Persistent Background Workers
+- **Queue Engine** (`app/worker/queue.py`): Redis list-based queue (`churn_poacher:workflow_queue`) with JSON task envelopes and task metadata tracking.
+- **Distributed Locking**: Protects targets from concurrent duplicate runs with `churn_poacher:lock:<target_id>` and automatic TTL expiration.
+- **Worker Daemon** (`app/worker/worker.py`): Non-blocking `blpop` worker polling with timeout protection, isolated database sessions per task, and graceful SIGTERM/SIGINT shutdown.
+- **Orchestrator Integration**: `run_pipeline(..., async_worker=True)` enqueues tasks and returns immediately with `status: "queued"`.
+
+### 4. Security & Role-Based Access Control (RBAC)
+- **User Roles**: `ADMINISTRATOR`, `SALES_MANAGER`, `ANALYST`.
+- **Password Security**: Salted PBKDF2-HMAC-SHA256 password hashing (100,000 iterations).
+- **JWT Auth**: HS256 tokens with role claims and configurable expiration.
+- **Human Approval & Export Gate**: `/approve`, `/reject`, and `/export` endpoints enforce `SALES_MANAGER` or `ADMINISTRATOR` permissions. `ANALYST` users cannot approve or export collateral.
+
+### 5. Deep Observability Probes
+- `/api/v1/health/deep` validates end-to-end component readiness:
+  - Database connectivity and query round-trip latency (ms).
+  - Redis connectivity, ping latency (ms), and active queue length.
+  - Background worker heartbeat freshness (<60s = active).
+  - Configured vs. active LLM provider.
+
+### 6. Production Documentation
+Complete enterprise operational manuals are available in `docs/`:
+- [`docs/ARCHITECTURE.md`](file:///C:/Users/Ram%20Malhotra/.gemini/antigravity/scratch/churn-poacher/docs/ARCHITECTURE.md): System topology, micro-architecture, and state transitions.
+- [`docs/DEPLOYMENT.md`](file:///C:/Users/Ram%20Malhotra/.gemini/antigravity/scratch/churn-poacher/docs/DEPLOYMENT.md): Docker Compose quickstart, production checklist, and seeding.
+- [`docs/ENVIRONMENT_VARIABLES.md`](file:///C:/Users/Ram%20Malhotra/.gemini/antigravity/scratch/churn-poacher/docs/ENVIRONMENT_VARIABLES.md): Comprehensive dictionary of all configuration parameters.
+- [`docs/SECURITY.md`](file:///C:/Users/Ram%20Malhotra/.gemini/antigravity/scratch/churn-poacher/docs/SECURITY.md): RBAC matrix, secret rotation, and human-in-the-loop safeguards.
+- [`docs/DATABASE_BACKUP.md`](file:///C:/Users/Ram%20Malhotra/.gemini/antigravity/scratch/churn-poacher/docs/DATABASE_BACKUP.md): Automated PostgreSQL dump, restore runbooks, and disaster recovery.
+- [`docs/TROUBLESHOOTING.md`](file:///C:/Users/Ram%20Malhotra/.gemini/antigravity/scratch/churn-poacher/docs/TROUBLESHOOTING.md): Operational runbooks, lock release, and container diagnostics.
+
+### 7. How to Launch with Docker Compose
+
+```bash
+# 1. Clone & copy environment configuration
+cp .env.example .env
+
+# 2. Start all services in detached mode
+docker compose up -d
+
+# 3. Apply database migrations
+docker compose run --rm backend alembic upgrade head
+
+# 4. Seed default admin & sales manager accounts
+curl -X POST http://localhost:8000/api/v1/auth/seed-defaults
+
+# 5. Access the applications
+# Frontend Dashboard: http://localhost:3000
+# Backend OpenAPI Docs: http://localhost:8000/docs
+# Deep Health Probe: http://localhost:8000/api/v1/health/deep
+```
+
+---
+
 ## Automated Test Execution
 
 ```powershell
 cd backend
 .\.venv\Scripts\pytest.exe -v
 ```
-All **89 automated tests** passing 100% green across all components, agents, orchestrator, LLM abstraction, and end-to-end integration flows.
+All **96 automated tests** passing 100% green across all components, agents, orchestrator, LLM abstraction, auth & RBAC, Redis worker queue, and end-to-end integration flows.

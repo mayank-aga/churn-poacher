@@ -15,6 +15,7 @@ class WorkflowRunRequest(BaseModel):
     include_synthetic: bool = Field(True, description="Whether to include synthetic demo signals if listener runs")
     max_retries: int = Field(3, ge=1, le=5, description="Maximum retry attempts on transient step failure")
     timeout_seconds: int = Field(60, ge=5, le=300, description="Per-workflow timeout limit in seconds")
+    async_worker: bool = Field(False, description="Enqueue workflow task to persistent Redis background worker queue")
 
 
 class WorkflowStepRecord(BaseModel):

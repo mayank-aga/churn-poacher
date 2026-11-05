@@ -14,8 +14,12 @@ from app.api.v1.finops import router as finops_router
 from app.api.v1.copywriter import router as copywriter_router
 from app.api.v1.orchestrator import router as orchestrator_router
 from app.api.v1.llm import router as llm_router
+from app.api.v1.auth import router as auth_router
+from app.api.v1.health import router as health_router
 
 api_v1_router = APIRouter(prefix="/v1")
+api_v1_router.include_router(health_router)
+api_v1_router.include_router(auth_router)
 api_v1_router.include_router(signals_router)
 api_v1_router.include_router(companies_router)
 api_v1_router.include_router(dossiers_router)

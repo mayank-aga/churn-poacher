@@ -16,6 +16,13 @@ from app.db.base import Base
 engine_kwargs = {"echo": False}
 if "sqlite" in settings.DATABASE_URL:
     engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    # Production PostgreSQL connection pooling (asyncpg)
+    engine_kwargs["pool_size"] = settings.DB_POOL_SIZE
+    engine_kwargs["max_overflow"] = settings.DB_MAX_OVERFLOW
+    engine_kwargs["pool_timeout"] = settings.DB_POOL_TIMEOUT
+    engine_kwargs["pool_pre_ping"] = True
+    engine_kwargs["pool_recycle"] = settings.DB_POOL_RECYCLE
 
 async_engine = create_async_engine(
     settings.DATABASE_URL,

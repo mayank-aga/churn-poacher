@@ -3,7 +3,7 @@ Application Configuration Module using Pydantic Settings.
 Loads environment variables from .env with fallback defaults.
 """
 
-from typing import Optional
+from typing import Optional, List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,11 +14,33 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     DEMO_MODE: bool = True
 
-    # Database
+    # Security & Auth
+    SECRET_KEY: str = "churn-poacher-secret-key-change-in-production-env-7a8b9c"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
+    ENABLE_AUTH: bool = False  # Set to True in production to enforce bearer token on API v1
+
+    # Database & Connection Pooling
     DATABASE_URL: str = "sqlite+aiosqlite:///./churn_poacher.db"
+    DB_POOL_SIZE: int = 10
+    DB_MAX_OVERFLOW: int = 20
+    DB_POOL_TIMEOUT: int = 30
+    DB_POOL_RECYCLE: int = 1800
     
-    # Redis
+    # Redis & Background Workers
     REDIS_URL: str = "redis://localhost:6379/0"
+    WORKER_CONCURRENCY: int = 4
+    WORKER_POLL_INTERVAL: float = 1.0
+    WORKER_LOCK_TIMEOUT: int = 300
+    WORKER_HEARTBEAT_INTERVAL: int = 15
+
+    # CORS
+    CORS_ORIGINS: List[str] = [
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ]
 
     # LLM Multi-Provider Settings
     LLM_PROVIDER: str = "auto"  # 'auto', 'gemini', 'openai', 'claude', 'fallback'

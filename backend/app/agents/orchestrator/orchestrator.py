@@ -98,7 +98,20 @@ class CentralOrchestrator:
         await db.commit()
         await db.refresh(workflow)
 
-        # 4. Execute pipeline
+        # 4. Check if persistent background execution is requested
+        if getattr(request, "async_worker", False):
+            from app.worker.queue import WorkflowTaskQueue
+            enqueued = await WorkflowTaskQueue.enqueue(
+                workflow_id=workflow.id,
+                timeout_seconds=request.timeout_seconds,
+            )
+            if enqueued:
+                workflow.status = "QUEUED"
+                await db.commit()
+                await db.refresh(workflow)
+                return workflow
+
+        # 5. Direct async execution (default for synchronous API calls and automated tests)
         return await PipelineRunner.execute_workflow(
             workflow=workflow,
             db=db,
