@@ -35,7 +35,7 @@
 - [x] **Phase 5: FinOps & Architect Agent** (Datadog vs. SigNoz/Grafana Delta Matrix, 5 platforms, Low/Base/High scenarios, sensitivity ranking, OpenTelemetry dual-shipping YAML generator, 7-phase migration plan, rollback strategy, DepositionDossier persistence)
 - [x] **Phase 6: Copywriter Agent** (Context-aware outreach drafts, executive emails, LinkedIn sequences, technical pitch, value prop, objection matrix, evidence guard, human-in-the-loop review)
 - [x] **Phase 7: Central Orchestration** (End-to-end multi-agent pipeline, workflow state machine, retry policies, qualification-based routing, duplicate execution prevention, REST APIs)
-- [ ] **Phase 8: Frontend Dashboard** (Next.js, Tailwind CSS, Recharts, Dossier viewer, real-time monitors)
+- [x] **Phase 8: Frontend Dashboard** (Next.js 14 App Router, TypeScript, Tailwind CSS, TanStack Query, Recharts, React Flow DAG, 10 Production Views, Human-in-the-Loop review & export gating)
 - [ ] **Phase 9: End-to-End Integration & Testing** (Integration tests, scenario tests, live/demo runs)
 - [ ] **Phase 10: Docker Deployment & Documentation** (Docker Compose, production runbooks, user guide)
 
@@ -236,6 +236,52 @@ curl -X POST "http://localhost:8000/api/v1/orchestrator/retry/{workflow_id}"
 ### 4. Known Limitations
 - Background task queues (e.g. Celery / ARQ / Redis) are intentionally deferred to Phase 10; current execution is fully asynchronous within FastAPI's async runtime.
 - External vendor APIs (e.g., Live Reddit PRAW, LinkedIn APIs) require configured API credentials; otherwise, the system seamlessly uses live Hacker News, Datadog Status RSS, and synthetic labeled pipelines.
+
+---
+
+## Phase 8: Frontend Dashboard (Next.js 14 & Tailwind CSS)
+
+A dark-mode enterprise intelligence dashboard (`#08090d` charcoal canvas with violet/cyan accents and Linear/Palantir aesthetics).
+
+### 1. Technology Stack
+- **Framework**: Next.js 14 (App Router) & React 18
+- **Language**: TypeScript (strict type checking enabled)
+- **Styling**: Tailwind CSS & PostCSS
+- **Data Fetching**: TanStack React Query v5 (automatic polling & cache invalidation)
+- **Charts & Visualizations**: Recharts (modeled financial delta charts & scenario comparisons)
+- **Agent Topology**: `@xyflow/react` v12 (interactive, navigable execution DAG)
+- **Icons**: Lucide React
+
+### 2. Available Views & Routes
+1. `/` — **Intelligence Overview**: High-level KPI metrics (signals detected, qualified prospects, potential annual savings, dossiers created), top opportunity cards, recent distress signals, and agent execution readiness.
+2. `/signals` — **Distress Signal Monitor**: Live stream of ingested Datadog complaints, outage alerts, and price spikes with source badges, urgency tags, search, and one-click pipeline execution.
+3. `/companies` — **Identified Companies Directory**: Searchable list of resolved companies, qualification status badges, ICP score bars, tech stack indicators, and quick links to dossiers.
+4. `/companies/[id]` — **Deep Company Dossier**: Complete 7-tab intelligence dossier:
+   - *Overview*: Executive summary, ICP score, qualification rationales.
+   - *Evidence*: Distinguish between `VERIFIED` (with source URL) and `INFERRED` facts.
+   - *Technology*: Detected Datadog agents, Kubernetes clusters, APM, and cloud providers.
+   - *Financials*: Datadog vs. SigNoz/Grafana Delta Matrix across Low, Base, and High scenarios.
+   - *Architecture*: Side-by-side architecture comparison, syntax-highlighted `otel-collector-config.yaml` (`:8126`), 7-stage migration schedule, and rollback plan.
+   - *Outreach Studio*: Executive email variations, LinkedIn sequences, 7-point objection matrix, Evidence Guard anti-hallucination verification badge, and Human-in-the-Loop Approve/Reject/Export controls.
+   - *Activity*: Timestamped audit trail of agent actions and transitions.
+5. `/financials` — **FinOps Analytics**: Modeled annual savings breakdown, 3-year TCO projections, payback periods, sensitivity ranking, and the published pricing catalog.
+6. `/architect` — **Migration Architect**: Current vs. OpenTelemetry target architecture, dual-shipping collector configurations, 7-phase takeout timeline, and disaster recovery playbooks.
+7. `/outreach` — **Outreach Studio**: Central collateral review hub with strict Human-in-the-Loop approval/rejection and markdown export gating.
+8. `/agents` — **Agent Monitor**: Live, interactive React Flow DAG showing node states (`Listener` $\to$ `Profiler` $\to$ `FinOps` $\to$ `Architect` $\to$ `Copywriter` $\to$ `Human Approval Gate`) and recent execution logs.
+9. `/history` — **Execution History**: Chronological log of multi-agent pipeline executions, searchable by workflow ID, status filters, latency metrics, and expandable granular step transitions.
+10. `/settings` — **System Settings & Governance**: Monitored vendor defaults, displacement targets (SigNoz vs. Grafana), FinOps hourly rates, anti-hallucination policies, and synthetic distress injection triggers.
+
+### 3. How to Run Frontend
+
+```powershell
+# Development server (http://localhost:3000)
+cd frontend
+npm run dev
+
+# Production build & verification
+npm run build
+npm run start
+```
 
 ---
 
