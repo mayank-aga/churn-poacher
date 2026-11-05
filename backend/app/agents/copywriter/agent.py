@@ -34,6 +34,7 @@ class CopywriterAgent:
         finops_data: Optional[Dict[str, Any]] = None,
         arch_data: Optional[Dict[str, Any]] = None,
         target_challenger: str = "SigNoz Cloud",
+        include_llm_polish: bool = False,
     ) -> OutreachPackage:
         """Generates the complete audited outreach collateral package."""
         company_data = {
@@ -68,6 +69,41 @@ class CopywriterAgent:
         technical_pitch = TechnicalPitchWriter.generate_pitch(context, finops, arch)
         value_prop = ValuePropositionWriter.generate_value_proposition(context, finops)
         objection_matrix = ObjectionHandler.generate_matrix(context, finops, arch)
+
+        # 2b. Optional LLM Refinement of Primary Variant
+        if include_llm_polish:
+            try:
+                from app.core.llm.services import LLMIntelligenceService
+                from app.agents.copywriter.schemas import EmailVariant
+                primary_body = executive_emails[0].body_markdown
+                base_savings = 0.0
+                if finops and "scenarios" in finops and "BASE" in finops["scenarios"]:
+                    base_savings = float(finops["scenarios"]["BASE"].get("signoz_cloud_annual_savings", 0.0))
+
+                refined = await LLMIntelligenceService.polish_personalized_outreach(
+                    company_name=company.name,
+                    baseline_body=primary_body,
+                    verified_savings_usd=base_savings,
+                    target_backend=target_challenger,
+                )
+                if refined and refined.subject_lines and refined.polished_body:
+                    subjects = list(refined.subject_lines)
+                    while len(subjects) < 3:
+                        subjects.append(f"{company.name} Datadog migration blueprint")
+
+                    refined_variant = EmailVariant(
+                        variant_type="LLM_POLISHED_EXECUTIVE",
+                        target_role="CTO / VP Engineering",
+                        subject_lines=subjects[:3],
+                        preheader=refined.opening_hook[:120],
+                        body_markdown=refined.polished_body,
+                        call_to_action=refined.call_to_action,
+                        referenced_attachments=["otel-collector-production.yaml", "financial-delta-matrix.pdf"],
+                    )
+                    executive_emails.append(refined_variant)
+            except Exception:
+                # Fallback to deterministic variants
+                pass
 
         # 3. Compile full text corpus for Evidence Guard audit
         corpus_parts = [
@@ -115,6 +151,7 @@ class CopywriterAgent:
         company_id: str,
         target_challenger: str = "SigNoz Cloud",
         db: Optional[AsyncSession] = None,
+        include_llm_polish: bool = False,
     ) -> Dict[str, Any]:
         """
         Loads Company, Signal, and DepositionDossier; generates outreach package;
@@ -149,6 +186,7 @@ class CopywriterAgent:
             finops_data=finops_data,
             arch_data=arch_data,
             target_challenger=target_challenger,
+            include_llm_polish=include_llm_polish,
         )
 
         package_dict = package.model_dump(mode="json")

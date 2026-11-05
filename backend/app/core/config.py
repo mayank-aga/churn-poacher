@@ -20,9 +20,20 @@ class Settings(BaseSettings):
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
 
-    # OpenAI / LLM
+    # LLM Multi-Provider Settings
+    LLM_PROVIDER: str = "auto"  # 'auto', 'gemini', 'openai', 'claude', 'fallback'
+    
+    # OpenAI
     OPENAI_API_KEY: Optional[str] = None
     OPENAI_MODEL: str = "gpt-4o-mini"
+
+    # Google Gemini
+    GEMINI_API_KEY: Optional[str] = None
+    GEMINI_MODEL: str = "gemini-1.5-flash"
+
+    # Anthropic Claude
+    ANTHROPIC_API_KEY: Optional[str] = None
+    ANTHROPIC_MODEL: str = "claude-3-5-sonnet-20241022"
 
     # Social & Status integrations
     REDDIT_CLIENT_ID: Optional[str] = None

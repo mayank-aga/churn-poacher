@@ -43,7 +43,7 @@ export default function MigrationArchitectPage() {
 
       <div className="p-6 space-y-6 max-w-7xl mx-auto w-full">
         {/* Company Selector */}
-        {companies && companies.length > 0 && (
+        {companies && companies.length > 0 ? (
           <div className="flex items-center gap-3 p-3 rounded-lg bg-surface-100 border border-border">
             <span className="text-xs text-gray-400 font-medium">Select Target Organization:</span>
             <select
@@ -57,6 +57,10 @@ export default function MigrationArchitectPage() {
                 </option>
               ))}
             </select>
+          </div>
+        ) : (
+          <div className="p-4 rounded-lg bg-surface-100 border border-border text-xs text-gray-400 text-center">
+            No qualified accounts available. Ingest signals and run the pipeline to generate architecture blueprints.
           </div>
         )}
 

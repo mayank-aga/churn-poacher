@@ -12,7 +12,7 @@ import {
   RefreshCw,
   Activity
 } from "lucide-react";
-import { fetchSystemStats, triggerSyntheticSignal } from "@/lib/api";
+import { fetchSystemStats, triggerSyntheticSignal, api } from "@/lib/api";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { SystemStatsSummary } from "@/types";
@@ -29,6 +29,11 @@ export default function SettingsPage() {
   const { data: stats, isLoading: isStatsLoading, refetch } = useQuery<SystemStatsSummary>({
     queryKey: ["systemStats"],
     queryFn: fetchSystemStats,
+  });
+
+  const { data: llmStatus } = useQuery({
+    queryKey: ["llmStatus"],
+    queryFn: () => api.getLLMStatus(),
   });
 
   const handleGenerateSynthetic = async () => {
@@ -279,6 +284,76 @@ export default function SettingsPage() {
                 <span>{generationSuccess}</span>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        {/* LLM Provider Architecture */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>LLM Provider Architecture</CardTitle>
+              <Badge variant={llmStatus?.active_provider === "deterministic-fallback" ? "warning" : "success"}>
+                Active: {llmStatus?.active_provider || "deterministic-fallback"}
+              </Badge>
+            </div>
+            <CardDescription>
+              Multi-provider language model integration (OpenAI, Gemini, Claude) with deterministic fallback generation.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+              <div className="p-3 rounded-lg bg-surface-elevated/70 border border-border-subtle">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-text-primary">Google Gemini</span>
+                  <span className={`w-2 h-2 rounded-full ${llmStatus?.providers?.gemini?.available ? "bg-status-success" : "bg-text-muted/40"}`} />
+                </div>
+                <div className="mt-1 font-mono text-[11px] text-text-secondary">
+                  gemini-1.5-flash
+                </div>
+                <div className="text-[10px] text-text-muted mt-0.5">
+                  {llmStatus?.providers?.gemini?.available ? "Configured & Active" : "No GEMINI_API_KEY"}
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-surface-elevated/70 border border-border-subtle">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-text-primary">OpenAI</span>
+                  <span className={`w-2 h-2 rounded-full ${llmStatus?.providers?.openai?.available ? "bg-status-success" : "bg-text-muted/40"}`} />
+                </div>
+                <div className="mt-1 font-mono text-[11px] text-text-secondary">
+                  gpt-4o-mini
+                </div>
+                <div className="text-[10px] text-text-muted mt-0.5">
+                  {llmStatus?.providers?.openai?.available ? "Configured & Active" : "No OPENAI_API_KEY"}
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-surface-elevated/70 border border-border-subtle">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-text-primary">Anthropic Claude</span>
+                  <span className={`w-2 h-2 rounded-full ${llmStatus?.providers?.claude?.available ? "bg-status-success" : "bg-text-muted/40"}`} />
+                </div>
+                <div className="mt-1 font-mono text-[11px] text-text-secondary">
+                  claude-3-5-sonnet
+                </div>
+                <div className="text-[10px] text-text-muted mt-0.5">
+                  {llmStatus?.providers?.claude?.available ? "Configured & Active" : "No ANTHROPIC_API_KEY"}
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-surface-elevated/70 border border-border-subtle">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold text-text-primary">Deterministic Engine</span>
+                  <span className="w-2 h-2 rounded-full bg-status-success" />
+                </div>
+                <div className="mt-1 font-mono text-[11px] text-text-secondary">
+                  zero-hallucination
+                </div>
+                <div className="text-[10px] text-status-success mt-0.5">
+                  Always Available
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 

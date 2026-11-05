@@ -60,7 +60,7 @@ export default function FinancialAnalysisPage() {
           <div className="p-4 rounded-lg bg-surface-100 border border-border">
             <span className="text-[10px] font-mono text-gray-400 uppercase block">Modeled Annual Savings Pool</span>
             <div className="text-2xl font-bold text-emerald-400 font-mono mt-1">
-              {formatCurrency(metrics?.total_potential_annual_savings_usd || 450000)}
+              {metrics?.total_potential_annual_savings_usd ? formatCurrency(metrics.total_potential_annual_savings_usd) : "$0"}
             </div>
             <span className="text-xs text-gray-400 mt-1 block">Aggregated across active dossiers</span>
           </div>
@@ -68,7 +68,7 @@ export default function FinancialAnalysisPage() {
           <div className="p-4 rounded-lg bg-surface-100 border border-border">
             <span className="text-[10px] font-mono text-gray-400 uppercase block">Average Payback Horizon</span>
             <div className="text-2xl font-bold text-brand-300 font-mono mt-1">
-              ~{metrics?.average_payback_period_months || 1.6} months
+              {metrics?.average_payback_period_months ? `~${metrics.average_payback_period_months.toFixed(1)} months` : "N/A"}
             </div>
             <span className="text-xs text-gray-400 mt-1 block">Recoups all migration engineering hours</span>
           </div>

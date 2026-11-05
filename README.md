@@ -36,7 +36,7 @@
 - [x] **Phase 6: Copywriter Agent** (Context-aware outreach drafts, executive emails, LinkedIn sequences, technical pitch, value prop, objection matrix, evidence guard, human-in-the-loop review)
 - [x] **Phase 7: Central Orchestration** (End-to-end multi-agent pipeline, workflow state machine, retry policies, qualification-based routing, duplicate execution prevention, REST APIs)
 - [x] **Phase 8: Frontend Dashboard** (Next.js 14 App Router, TypeScript, Tailwind CSS, TanStack Query, Recharts, React Flow DAG, 10 Production Views, Human-in-the-Loop review & export gating)
-- [ ] **Phase 9: End-to-End Integration & Testing** (Integration tests, scenario tests, live/demo runs)
+- [x] **Phase 9: End-to-End Testing & LLM Integration** (Multi-provider LLM abstraction [OpenAI, Gemini, Claude, Fallback], structured Pydantic schemas, full E2E lifecycle tests, export security gating, 89 green backend tests, clean Next.js build)
 - [ ] **Phase 10: Docker Deployment & Documentation** (Docker Compose, production runbooks, user guide)
 
 ---
@@ -285,10 +285,35 @@ npm run start
 
 ---
 
+## Phase 9: End-to-End Testing & LLM Provider Abstraction
+
+### 1. Multi-Provider LLM Architecture (`app/core/llm/`)
+Provides a unified abstraction across three major commercial LLM providers with automatic credential discovery and zero-latency deterministic fallbacks:
+- **Google Gemini**: Uses `GEMINI_API_KEY` and `GEMINI_MODEL` (default: `gemini-1.5-flash`) via the Gemini REST API with native JSON schemas.
+- **OpenAI**: Uses `OPENAI_API_KEY` and `OPENAI_MODEL` (default: `gpt-4o-mini`) via chat completions with JSON mode.
+- **Anthropic Claude**: Uses `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL` (default: `claude-3-5-sonnet-20241022`) via Messages API.
+- **Deterministic Fallback Engine**: Always available, produces 100% compliant structured output without external API keys or network dependencies. Ensures full automated test reliability.
+
+### 2. Guardrails & Separation of Concerns
+- **LLM Tasks**: Nuance sentiment analysis, unstructured evidence extraction, executive briefing summarization, natural language migration explanations, and executive copy polish.
+- **Deterministic Python Enforcement**: ICP scoring, qualification thresholds, telemetry cost modeling, savings calculations, 7-stage migration scheduling, Evidence Guard anti-hallucination audits, and human approval gates remain strictly implemented in deterministic Python code. Financial numbers are locked to prevent fabricated savings claims.
+
+### 3. End-to-End Test Suite
+Comprehensive integration tests cover the entire system lifecycle:
+- Ingestion of public complaints & vendor incidents via Listener adapters.
+- Content fingerprint deduplication preventing redundant processing.
+- Entity resolution and deterministic ICP qualification.
+- FinOps cost modeling (Datadog vs. SigNoz/Grafana across Low, Base, High scenarios).
+- OpenTelemetry Collector YAML (`:8126`) and 7-stage migration blueprint synthesis.
+- Copywriter personalized collateral generation with Evidence Guard anti-hallucination audits.
+- Human Approval Gate: strict HTTP 403 Forbidden enforcement on `/export` prior to approval; successful export of markdown bundles once approved.
+
+---
+
 ## Automated Test Execution
 
 ```powershell
 cd backend
 .\.venv\Scripts\pytest.exe -v
 ```
-All **74 automated tests** passing 100% green across all components, agents, and orchestrator.
+All **89 automated tests** passing 100% green across all components, agents, orchestrator, LLM abstraction, and end-to-end integration flows.

@@ -13,6 +13,7 @@ from app.api.v1.profiler import router as profiler_router
 from app.api.v1.finops import router as finops_router
 from app.api.v1.copywriter import router as copywriter_router
 from app.api.v1.orchestrator import router as orchestrator_router
+from app.api.v1.llm import router as llm_router
 
 api_v1_router = APIRouter(prefix="/v1")
 api_v1_router.include_router(signals_router)
@@ -25,3 +26,4 @@ api_v1_router.include_router(profiler_router)
 api_v1_router.include_router(finops_router)
 api_v1_router.include_router(copywriter_router)
 api_v1_router.include_router(orchestrator_router)
+api_v1_router.include_router(llm_router)
