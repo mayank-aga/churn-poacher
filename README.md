@@ -31,7 +31,7 @@
 - [x] **Phase 1: Project Structure & Environment Setup** (Modular layout, Pydantic settings, health check API, test harness)
 - [x] **Phase 2: Database & Backend Foundation** (SQLAlchemy models, Async DB sessions, CRUD repositories, REST API v1)
 - [x] **Phase 3: Listener Agent** (Datadog Status & HN Live Adapters, Reddit OAuth Graceful Fallback, Synthetic Generator, Normalization, Classification, Deduplication)
-- [ ] **Phase 4: Profiler Agent** (Entity resolution, tech stack verification, ICP scoring, anti-hallucination guardrails)
+- [x] **Phase 4: Profiler Agent** (Entity resolution, DNS verification, GitHub/Job technology profiling, explainable 5-dimension ICP scoring, strict anti-hallucination evidence validation)
 - [ ] **Phase 5: FinOps & Architect Agent** (Datadog vs. SigNoz/Grafana Delta Matrix, OTel migration blueprints, dual-shipping YAMLs)
 - [ ] **Phase 6: Copywriter Agent** (Context-aware outreach drafts, value propositions, human-in-the-loop review)
 - [ ] **Phase 7: Central Orchestration** (Agent state machine, retry policies, deduplication, JSON schema validation)
@@ -41,62 +41,82 @@
 
 ---
 
-## Phase 3: Listener Agent Architecture
+## Phase 4: Profiler Agent Architecture
 
 ```
-[ Datadog Statuspage ] ──┐
-[ Hacker News Algolia] ──┼──▶ [ Normalizer ] ──▶ [ Classifier ] ──▶ [ Deduplicator ] ──▶ [ SQLite/PostgreSQL ]
-[ Reddit API (OAuth) ] ──┤     (Common Schema)    (Sentiment, Cat,      (SHA-256 Finger-    (`signals` Table)
-[ Synthetic Generator] ──┘                         Urgency, Relevance)   print Matching)   + Execution Logs
+[ Listener Signal (status='NEW') ]
+               │
+               ▼
+   [ Entity Resolver ] ──────────────▶ Anonymous / Unverified? ──▶ [ Signal.status = 'UNRESOLVED' ]
+   (Explicit Company / Domain)                                      (No Fabrication, Preserved)
+               │ (Candidate Identified)
+               ▼
+   [ Domain Verifier ] ──────────────▶ Public DNS Checks (A, CNAME, MX)
+               │
+               ▼
+ [ Technology Profiler ] ────────────▶ Public GitHub Repos + Job Postings Telemetry
+               │
+               ▼
+   [ Evidence Validator ] ───────────▶ Strict Classification: VERIFIED vs INFERRED vs UNKNOWN
+               │
+               ▼
+     [ Explainable ICP Scorer ] ─────▶ 5 Dimensions (Size: 20%, Infra: 20%, Tech: 25%, DD: 20%, Distress: 15%)
+                                       Separate Scores: ICP Fit, Identity Conf, Technology Conf
+               │
+               ▼
+    [ Qualification State ] ─────────▶ ACCEPTED / REVIEW_REQUIRED / REJECTED
+                                       (High ICP Fit NEVER overrides weak identity evidence!)
 ```
 
-### 1. Ingestion Sources & Required Credentials
+### 1. Explainable ICP Scoring Model
 
-| Source | Endpoint / Integration | Required Credentials | Behavior if Missing |
-| :--- | :--- | :--- | :--- |
-| **Datadog Status** | Statuspage API & Incident History RSS | **None (Public)** | Fetches live active & resolved incidents. Categories as `VENDOR_INCIDENT`. |
-| **Hacker News** | Algolia HN Search API | **None (Public)** | Searches for keywords (`datadog pricing`, `datadog bill`, etc.). |
-| **Reddit** | Official Reddit OAuth Script App | `REDDIT_CLIENT_ID`, `REDDIT_CLIENT_SECRET` | Disables gracefully with `status: "DISABLED_NO_CREDS"`. No rate limit violations. |
-| **Synthetic Generator** | In-Memory Realistic Datadog Scenarios | **None** | Generates high-conviction pricing/outage/migration scenarios with `is_synthetic=True`. |
+The Profiler Agent evaluates 5 distinct weighted dimensions (0.0 to 1.0):
 
-### 2. Distinguishing Real vs. Synthetic Signals
-- Every synthetic signal strictly has `is_synthetic = True` and `source = "SYNTHETIC"`.
-- Real-world signals have `is_synthetic = False` and preserve original canonical URLs (`status.datadoghq.com/...`, `news.ycombinator.com/...`, `reddit.com/...`).
-- API metric endpoints explicitly distinguish `real_signals_count` and `synthetic_signals_count`.
+1. **Company Size Suitability (20%)**: Optimal sweet spot is 50–1000 employees with high telemetry spend and agility to migrate.
+2. **Infrastructure Maturity (20%)**: Cloud-native footprint (Kubernetes, AWS/GCP, multi-node clusters).
+3. **Technology Footprint (25%)**: OpenTelemetry, APM, microservices, distributed tracing readiness.
+4. **Datadog Usage Evidence (20%)**: Concrete verified or inferred evidence of active Datadog production telemetry.
+5. **Migration Intent or Pain Urgency (15%)**: Signal distress rating and urgency level from price shocks or outages.
 
-### 3. How to Trigger and Test Ingestion
+### 2. Separate Confidence Dimensions
+- **ICP Fit Score**: Attractiveness as a potential takeout customer.
+- **Identity Confidence**: Confidence that the author/signal belongs to the identified corporate entity.
+- **Technology Confidence**: Confidence that the company runs Datadog in production.
 
-#### Running Ingestion via REST API:
+### 3. Qualification Gates
+- **`ACCEPTED`**: `identity_confidence >= 0.70` AND `icp_fit_score >= 0.65` AND `technology_confidence >= 0.60`.
+- **`REVIEW_REQUIRED`**: Promising infrastructure or pain, but requires human identity verification before outreach.
+- **`REJECTED`**: Micro-hobbyists, students, or non-commercial projects.
+
+---
+
+## REST API Profiler Endpoints
+
 ```bash
-# Trigger an ingestion cycle (including synthetic signals)
-curl -X POST "http://localhost:8000/api/v1/listener/run" \
+# Trigger batch profiling over new listener signals
+curl -X POST "http://localhost:8000/api/v1/profiler/run" \
      -H "Content-Type: application/json" \
-     -d '{"include_synthetic": true, "max_items_per_source": 10}'
+     -d '{"max_signals": 10}'
 
-# Check adapter availability & execution status
-curl "http://localhost:8000/api/v1/listener/status"
+# Check profiler operational status and queue counts
+curl "http://localhost:8000/api/v1/profiler/status"
 
-# View quantitative metrics & counts
-curl "http://localhost:8000/api/v1/listener/metrics"
-```
+# List enriched companies (filter by qualification status or minimum ICP score)
+curl "http://localhost:8000/api/v1/profiler/companies?status=ACCEPTED&min_icp_score=0.70"
 
-#### Running Tests:
-```powershell
-cd backend
-.\.venv\Scripts\pytest.exe -v
+# Fetch complete company intelligence dossier by ID
+curl "http://localhost:8000/api/v1/profiler/companies/{company_id}"
+
+# Retrieve aggregated qualification metrics
+curl "http://localhost:8000/api/v1/profiler/metrics"
 ```
 
 ---
 
-## Local Development Quickstart
+## Local Test Execution
 
 ```powershell
 cd backend
-python -m venv .venv
-.\.venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env
-pytest
-uvicorn app.main:app --reload --port 8000
+.\.venv\Scripts\pytest.exe -v
 ```
-Interactive API Documentation: `http://localhost:8000/docs`
+All **38 automated tests** passing across unit, source, listener, and profiler test suites.
