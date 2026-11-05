@@ -34,12 +34,24 @@ import { formatDate } from "@/lib/utils";
 // Custom Node for React Flow
 function AgentNode({ data }: { data: any }) {
   const Icon = data.icon || Network;
+  const isRunning = data.status === "Running";
+  const isFailed = data.status === "Failed";
+  const isProtected = data.status === "Protected";
+  const isIdle = data.status === "Idle";
+  const isAvailable = data.status === "Available";
+
   return (
     <div
       className={`px-4 py-3 rounded-lg border backdrop-blur shadow-lg min-w-[180px] transition-all ${
-        data.active
+        data.active || isRunning
           ? "border-brand-400 bg-brand-950/40 glow-purple"
-          : data.status === "ONLINE"
+          : isFailed
+          ? "border-rose-500/50 bg-rose-950/20"
+          : isProtected
+          ? "border-amber-500/30 bg-surface-100"
+          : isIdle
+          ? "border-blue-500/30 bg-surface-100"
+          : isAvailable
           ? "border-emerald-500/30 bg-surface-100"
           : "border-border bg-surface-100/80"
       }`}
@@ -51,9 +63,15 @@ function AgentNode({ data }: { data: any }) {
         </div>
         <span
           className={`w-2 h-2 rounded-full ${
-            data.active
-              ? "bg-brand-400 animate-ping"
-              : data.status === "ONLINE"
+            isRunning
+              ? "bg-amber-400 animate-ping"
+              : isFailed
+              ? "bg-rose-400"
+              : isProtected
+              ? "bg-amber-400"
+              : isIdle
+              ? "bg-blue-400"
+              : isAvailable
               ? "bg-emerald-400"
               : "bg-gray-500"
           }`}
@@ -61,7 +79,9 @@ function AgentNode({ data }: { data: any }) {
       </div>
       <p className="text-[10px] text-gray-400 leading-tight">{data.role}</p>
       <div className="mt-2 pt-1.5 border-t border-border/50 flex items-center justify-between text-[9px] font-mono text-gray-500">
-        <span>{data.status}</span>
+        <span className={isRunning ? "text-amber-400 font-semibold" : isFailed ? "text-rose-400" : isProtected ? "text-amber-300" : isIdle ? "text-blue-300" : isAvailable ? "text-emerald-400" : "text-gray-400"}>
+          {data.status}
+        </span>
         <span className="text-gray-400">{data.duration}</span>
       </div>
     </div>
@@ -86,6 +106,11 @@ export default function AgentMonitorPage() {
     queryFn: () => api.listWorkflows({ limit: 10 }),
   });
 
+  const { data: stats } = useQuery({
+    queryKey: ["statsSummary"],
+    queryFn: () => api.getStatsSummary(),
+  });
+
   const runMutation = useMutation({
     mutationFn: () =>
       api.runWorkflow({
@@ -106,67 +131,85 @@ export default function AgentMonitorPage() {
   });
 
   // Construct React Flow graph
-  const nodes: Node[] = useMemo(
-    () => [
+  const nodes: Node[] = useMemo(() => {
+    const runningWf = workflows?.workflows?.find(
+      (w) => w.status?.includes("RUNNING") || w.status === "PENDING"
+    );
+    const latestWf = workflows?.workflows?.[0];
+    const pendingApproval = workflows?.workflows?.some(
+      (w) => w.status === "DRAFT_PENDING_APPROVAL"
+    );
+
+    const getAgentNodeData = (
+      agentKey: string,
+      stepName: string,
+      label: string,
+      role: string,
+      icon: any
+    ) => {
+      const isRunning = Boolean(runningWf && runningWf.current_step === stepName);
+      const isFailed = Boolean(latestWf?.status === "FAILED" && latestWf.current_step === stepName);
+      const stepHistoryItem = latestWf?.step_history?.find((s: any) => s.step_name === stepName);
+
+      let status = "Available";
+      if (isRunning) {
+        status = "Running";
+      } else if (isFailed) {
+        status = "Failed";
+      } else if (stats?.agent_status?.[agentKey] === "idle") {
+        status = "Idle";
+      } else if (stats?.agent_status?.[agentKey]) {
+        status = "Available";
+      } else if (!stats) {
+        status = "Unknown";
+      }
+
+      const duration = isRunning
+        ? "In progress..."
+        : stepHistoryItem
+        ? `${stepHistoryItem.duration_ms}ms`
+        : "Idle (ready)";
+
+      return {
+        label,
+        role,
+        status,
+        duration,
+        icon,
+        active: isRunning,
+      };
+    };
+
+    return [
       {
         id: "listener",
         type: "agentNode",
         position: { x: 50, y: 120 },
-        data: {
-          label: "1. Listener Agent",
-          role: "Multi-Source Distress Streams",
-          status: "ONLINE",
-          duration: "~180ms",
-          icon: Radio,
-        },
+        data: getAgentNodeData("listener", "LISTENER", "1. Listener Agent", "Multi-Source Distress Streams", Radio),
       },
       {
         id: "profiler",
         type: "agentNode",
         position: { x: 280, y: 120 },
-        data: {
-          label: "2. Profiler Agent",
-          role: "Entity Resolution & ICP Scorer",
-          status: "ONLINE",
-          duration: "~320ms",
-          icon: Building2,
-        },
+        data: getAgentNodeData("profiler", "PROFILER", "2. Profiler Agent", "Entity Resolution & ICP Scorer", Building2),
       },
       {
         id: "finops",
         type: "agentNode",
         position: { x: 510, y: 50 },
-        data: {
-          label: "3. FinOps Engine",
-          role: "5-Platform Pricing Delta",
-          status: "ONLINE",
-          duration: "~150ms",
-          icon: DollarSign,
-        },
+        data: getAgentNodeData("finops_architect", "FINOPS", "3. FinOps Engine", "5-Platform Pricing Delta", DollarSign),
       },
       {
         id: "architect",
         type: "agentNode",
         position: { x: 510, y: 190 },
-        data: {
-          label: "4. Architect Agent",
-          role: "OTel Port 8126 Collector Blueprint",
-          status: "ONLINE",
-          duration: "~210ms",
-          icon: Cpu,
-        },
+        data: getAgentNodeData("finops_architect", "ARCHITECT", "4. Architect Agent", "OTel Port 8126 Collector Blueprint", Cpu),
       },
       {
         id: "copywriter",
         type: "agentNode",
         position: { x: 740, y: 120 },
-        data: {
-          label: "5. Copywriter Agent",
-          role: "Collateral & Evidence Guard",
-          status: "ONLINE",
-          duration: "~280ms",
-          icon: Mail,
-        },
+        data: getAgentNodeData("copywriter", "COPYWRITER", "5. Copywriter Agent", "Collateral & Evidence Guard", Mail),
       },
       {
         id: "governance",
@@ -175,15 +218,14 @@ export default function AgentMonitorPage() {
         data: {
           label: "6. Human Approval Gate",
           role: "Strict Review Before Export",
-          status: "PROTECTED",
-          duration: "Human-gated",
+          status: "Protected",
+          duration: pendingApproval ? "Review pending" : "Human-gated",
           icon: ShieldAlert,
-          active: true,
+          active: pendingApproval,
         },
       },
-    ],
-    []
-  );
+    ];
+  }, [workflows, stats]);
 
   const edges: Edge[] = useMemo(
     () => [

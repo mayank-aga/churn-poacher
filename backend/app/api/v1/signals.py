@@ -18,6 +18,8 @@ router = APIRouter(prefix="/signals", tags=["Signals"])
 async def list_signals(
     source: Optional[str] = Query(None, description="Filter by source (REDDIT, HACKER_NEWS, etc.)"),
     vendor: Optional[str] = Query(None, description="Filter by vendor"),
+    complaint_category: Optional[str] = Query(None, description="Filter by complaint category (PRICING_SHOCK, OUTAGE, etc.)"),
+    min_urgency: Optional[float] = Query(None, ge=0.0, le=1.0, description="Minimum urgency score"),
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
 ):
@@ -26,6 +28,10 @@ async def list_signals(
         query = query.where(Signal.source == source)
     if vendor:
         query = query.where(Signal.vendor == vendor)
+    if complaint_category:
+        query = query.where(Signal.complaint_category == complaint_category)
+    if min_urgency is not None:
+        query = query.where(Signal.urgency_score >= min_urgency)
     
     result = await db.execute(query)
     return result.scalars().all()

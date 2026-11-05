@@ -16,11 +16,14 @@ router = APIRouter(prefix="/dossiers", tags=["Deposition Dossiers"])
 
 @router.get("", response_model=List[DossierRead])
 async def list_dossiers(
+    company_id: Optional[str] = Query(None, description="Filter by company ID"),
     status: Optional[str] = Query(None, description="Filter by status: DRAFT_PENDING_APPROVAL, APPROVED, etc."),
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_db),
 ):
     query = select(DepositionDossier).order_by(desc(DepositionDossier.created_at)).limit(limit)
+    if company_id:
+        query = query.where(DepositionDossier.company_id == company_id)
     if status:
         query = query.where(DepositionDossier.status == status)
     

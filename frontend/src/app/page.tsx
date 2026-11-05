@@ -88,7 +88,7 @@ export default function OverviewPage() {
           />
           <MetricCard
             title="Potential Savings"
-            value={formatCurrency(finopsMetrics?.total_potential_annual_savings_usd || stats?.potential_annual_savings_usd || 450000)}
+            value={formatCurrency(finopsMetrics?.total_potential_annual_savings_usd ?? stats?.potential_annual_savings_usd ?? 0)}
             subtitle="Annual modeled delta"
             icon={DollarSign}
             className="border-emerald-500/20 bg-gradient-to-br from-surface-100 to-emerald-950/15"
@@ -271,23 +271,49 @@ export default function OverviewPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               {[
-                { name: "Listener Agent", desc: "Reddit, HN & Datadog Status Streams", status: "ONLINE", color: "text-emerald-400" },
-                { name: "Profiler Agent", desc: "Entity Resolution & Tech Profiler", status: "ONLINE", color: "text-emerald-400" },
-                { name: "FinOps Engine", desc: "5-Platform Pricing Delta Matrix", status: "ONLINE", color: "text-emerald-400" },
-                { name: "Architect Agent", desc: "OpenTelemetry Port :8126 Dual-Ship", status: "ONLINE", color: "text-emerald-400" },
-                { name: "Copywriter Agent", desc: "Executive Collateral & Evidence Guard", status: "ONLINE", color: "text-emerald-400" },
-                { name: "Human Approval Gate", desc: "Strictly Enforces Human Review", status: "PROTECTED", color: "text-amber-400" },
-              ].map((agent) => (
-                <div key={agent.name} className="flex items-center justify-between p-2.5 rounded bg-surface-50/70 border border-border/60">
-                  <div>
-                    <div className="text-xs font-medium text-white">{agent.name}</div>
-                    <div className="text-[10px] text-gray-400">{agent.desc}</div>
+                { name: "Listener Agent", desc: "Reddit, HN & Datadog Status Streams", key: "listener", step: "LISTENER" },
+                { name: "Profiler Agent", desc: "Entity Resolution & Tech Profiler", key: "profiler", step: "PROFILER" },
+                { name: "FinOps Engine", desc: "5-Platform Pricing Delta Matrix", key: "finops_architect", step: "FINOPS" },
+                { name: "Architect Agent", desc: "OpenTelemetry Port :8126 Dual-Ship", key: "finops_architect", step: "ARCHITECT" },
+                { name: "Copywriter Agent", desc: "Executive Collateral & Evidence Guard", key: "copywriter", step: "COPYWRITER" },
+                { name: "Human Approval Gate", desc: "Strictly Enforces Human Review", key: "governance", step: "APPROVAL_GATE", isProtected: true },
+              ].map((agent) => {
+                let telemetry = { status: "Unknown", color: "text-gray-500" };
+                if (agent.isProtected) {
+                  telemetry = { status: "Protected", color: "text-amber-400" };
+                } else if (loadingStats) {
+                  telemetry = { status: "Unknown", color: "text-gray-500" };
+                } else {
+                  const runningWf = workflows?.workflows?.find(
+                    (w) => w.status?.includes("RUNNING") || w.status === "PENDING"
+                  );
+                  if (runningWf && runningWf.current_step === agent.step) {
+                    telemetry = { status: "Running", color: "text-amber-400 animate-pulse" };
+                  } else {
+                    const latestWf = workflows?.workflows?.[0];
+                    if (latestWf?.status === "FAILED" && latestWf.current_step === agent.step) {
+                      telemetry = { status: "Failed", color: "text-rose-400" };
+                    } else if (stats?.agent_status?.[agent.key] === "idle") {
+                      telemetry = { status: "Idle", color: "text-blue-400" };
+                    } else if (stats?.agent_status?.[agent.key]) {
+                      telemetry = { status: "Available", color: "text-emerald-400" };
+                    } else {
+                      telemetry = { status: "Available", color: "text-emerald-400" };
+                    }
+                  }
+                }
+                return (
+                  <div key={agent.name} className="flex items-center justify-between p-2.5 rounded bg-surface-50/70 border border-border/60">
+                    <div>
+                      <div className="text-xs font-medium text-white">{agent.name}</div>
+                      <div className="text-[10px] text-gray-400">{agent.desc}</div>
+                    </div>
+                    <span className={`text-[10px] font-mono font-semibold ${telemetry.color}`}>
+                      {telemetry.status}
+                    </span>
                   </div>
-                  <span className={`text-[10px] font-mono font-semibold ${agent.color}`}>
-                    {agent.status}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
               <div className="pt-2">
                 <Link
                   href="/agents"

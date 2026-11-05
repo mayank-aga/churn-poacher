@@ -31,7 +31,11 @@ async def get_overview_stats(db: AsyncSession = Depends(get_db)):
     )
     qualified_count = qualified_count_res.scalar() or 0
 
-    # 4. Total Potential Annual Savings across dossiers
+    # 4. Total Dossiers
+    dossiers_count_res = await db.execute(select(func.count(DepositionDossier.id)))
+    dossiers_count = dossiers_count_res.scalar() or 0
+
+    # 5. Total Potential Annual Savings across dossiers
     dossiers_res = await db.execute(select(DepositionDossier.financial_delta))
     dossier_deltas = dossiers_res.scalars().all()
     
@@ -44,6 +48,7 @@ async def get_overview_stats(db: AsyncSession = Depends(get_db)):
         signals_detected=signals_count,
         companies_identified=companies_count,
         qualified_prospects=qualified_count,
+        dossiers_count=dossiers_count,
         total_potential_annual_savings=total_savings,
         agent_status={
             "listener": "idle",

@@ -292,4 +292,5 @@ export interface SystemStatsSummary {
   dossiers_count: number;
   approved_count: number;
   potential_annual_savings_usd: number;
+  agent_status?: Record<string, string>;
 }

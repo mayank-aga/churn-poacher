@@ -28,11 +28,27 @@ export default function MigrationArchitectPage() {
 
   const activeCompanyId = selectedCompanyId || (companies && companies.length > 0 ? companies[0].id : "");
 
-  const { data: blueprint, isLoading } = useQuery({
+  const { data: blueprint, isLoading, error: blueprintError } = useQuery({
     queryKey: ["architectureBlueprint", activeCompanyId],
     queryFn: () => api.getArchitectureBlueprint(activeCompanyId),
     enabled: Boolean(activeCompanyId),
   });
+
+  const yamlContent = React.useMemo(() => {
+    if (!activeCompanyId) {
+      return "# No companies available.\n# Ingest signals and run the pipeline to generate target architecture blueprints.";
+    }
+    if (isLoading) {
+      return "# Loading OpenTelemetry Collector YAML from architecture engine...";
+    }
+    if (blueprintError) {
+      return `# API Error loading blueprint: ${(blueprintError as Error).message || "Unable to fetch blueprint"}`;
+    }
+    if (blueprint?.collector_config_yaml) {
+      return blueprint.collector_config_yaml;
+    }
+    return "# Company selected, but migration blueprint has not been generated yet.\n# Run the investigation pipeline for this account to synthesize the dual-shipping collector configuration.";
+  }, [activeCompanyId, isLoading, blueprintError, blueprint]);
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
@@ -137,7 +153,7 @@ export default function MigrationArchitectPage() {
           </CardHeader>
           <CardContent>
             <CodeViewer
-              code={blueprint?.collector_config_yaml || `# Loading OpenTelemetry Collector YAML...`}
+              code={yamlContent}
               language="yaml"
               title="otel-collector-production.yaml"
             />
@@ -153,37 +169,51 @@ export default function MigrationArchitectPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {(blueprint?.phases || []).map((phase: any) => (
-              <div key={phase.phase_number} className="p-4 rounded-lg bg-surface-50 border border-border">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-brand-400">Stage {phase.phase_number}:</span>
-                    <span className="text-xs font-semibold text-white">{phase.name}</span>
-                  </div>
-                  <span className="text-[11px] font-mono text-gray-400">Window: ~{phase.duration_days} days</span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-1">
-                  <div>
-                    <span className="text-[10px] font-mono text-gray-400 uppercase block mb-1">Key Tasks</span>
-                    <ul className="list-disc list-inside space-y-0.5 text-gray-300">
-                      {phase.tasks?.map((t: string, idx: number) => (
-                        <li key={idx}>{t}</li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div>
-                    <span className="text-[10px] font-mono text-emerald-400 uppercase block mb-1">Success Criteria</span>
-                    <ul className="list-disc list-inside space-y-0.5 text-gray-300">
-                      {phase.success_criteria?.map((sc: string, idx: number) => (
-                        <li key={idx}>{sc}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
+            {!activeCompanyId ? (
+              <div className="py-6 text-center text-xs text-gray-500">
+                No target organization selected. Select or qualify an organization to view migration stages.
               </div>
-            ))}
+            ) : isLoading ? (
+              <div className="py-6 text-center text-xs text-gray-500">
+                Loading migration stages from architecture engine...
+              </div>
+            ) : blueprint?.phases && blueprint.phases.length > 0 ? (
+              blueprint.phases.map((phase: any) => (
+                <div key={phase.phase_number} className="p-4 rounded-lg bg-surface-50 border border-border">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-mono font-bold text-brand-400">Stage {phase.phase_number}:</span>
+                      <span className="text-xs font-semibold text-white">{phase.name}</span>
+                    </div>
+                    <span className="text-[11px] font-mono text-gray-400">Window: ~{phase.duration_days} days</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-1">
+                    <div>
+                      <span className="text-[10px] font-mono text-gray-400 uppercase block mb-1">Key Tasks</span>
+                      <ul className="list-disc list-inside space-y-0.5 text-gray-300">
+                        {phase.tasks?.map((t: string, idx: number) => (
+                          <li key={idx}>{t}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-mono text-emerald-400 uppercase block mb-1">Success Criteria</span>
+                      <ul className="list-disc list-inside space-y-0.5 text-gray-300">
+                        {phase.success_criteria?.map((sc: string, idx: number) => (
+                          <li key={idx}>{sc}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="py-6 text-center text-xs text-gray-500">
+                No migration phases generated for this account yet. Run the investigation pipeline to generate milestones.
+              </div>
+            )}
           </CardContent>
         </Card>
 
